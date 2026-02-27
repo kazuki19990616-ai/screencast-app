@@ -360,11 +360,15 @@
     .viewer-page {
       display: flex; flex-direction: column; align-items: center;
       justify-content: center; min-height: 80vh; gap: 24px;
+      padding: 20px;
     }
     .viewer-page video {
-      max-width: 900px; width: 100%; border-radius: var(--radius-lg);
+      max-width: 960px; width: 100%; aspect-ratio: 16/9;
+      border-radius: var(--radius-lg);
       border: 1px solid var(--border);
       box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+      background: black;
+      object-fit: contain;
     }
 
     @media (max-width: 768px) {
@@ -538,6 +542,33 @@
     }
 
     function SharedViewer({ url }) {
+      const videoRef = useRef(null);
+      const [loading, setLoading] = useState(true);
+      const [error, setError] = useState(null);
+
+      useEffect(() => {
+        let blobUrl = null;
+        (async () => {
+          try {
+            setLoading(true);
+            const resp = await fetch(url);
+            if (!resp.ok) throw new Error('動画の取得に失敗しました');
+            const blob = await resp.blob();
+            blobUrl = URL.createObjectURL(blob);
+            if (videoRef.current) {
+              videoRef.current.src = blobUrl;
+              videoRef.current.play().catch(() => {});
+            }
+            setLoading(false);
+          } catch (e) {
+            console.error(e);
+            setError('動画の読み込みに失敗しました。リンクが無効か期限切れの可能性があります。');
+            setLoading(false);
+          }
+        })();
+        return () => { if (blobUrl) URL.revokeObjectURL(blobUrl); };
+      }, [url]);
+
       return (
         <div className="app">
           <header className="header">
@@ -548,10 +579,33 @@
           </header>
           <main className="main">
             <div className="viewer-page">
-              <video src={url} controls autoPlay style={{ maxWidth: 900, width: '100%', borderRadius: 20, border: '1px solid var(--border)' }} />
-              <div style={{ display: 'flex', gap: 12 }}>
-                <a href={url} download className="btn btn-secondary btn-sm" style={{ textDecoration: 'none' }}>💾 ダウンロード</a>
-                <a href={window.location.origin} className="btn btn-primary btn-sm" style={{ textDecoration: 'none' }}>🎬 自分も録画する</a>
+              {loading && (
+                <div style={{ color: 'var(--text-secondary)', fontSize: 16, padding: 40 }}>
+                  <span style={{ fontSize: 32, display: 'block', marginBottom: 12 }}>⏳</span>
+                  動画を読み込み中...
+                </div>
+              )}
+              {error && (
+                <div style={{ color: 'var(--danger)', fontSize: 16, padding: 40, textAlign: 'center' }}>
+                  <span style={{ fontSize: 32, display: 'block', marginBottom: 12 }}>⚠️</span>
+                  {error}
+                </div>
+              )}
+              <video
+                ref={videoRef}
+                controls
+                controlsList="nodownload"
+                disablePictureInPicture
+                onContextMenu={(e) => e.preventDefault()}
+                style={{
+                  maxWidth: 960, width: '100%', aspectRatio: '16/9',
+                  borderRadius: 20, border: '1px solid var(--border)',
+                  background: 'black', objectFit: 'contain',
+                  display: loading ? 'none' : 'block'
+                }}
+              />
+              <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
+                <a href={window.location.origin + window.location.pathname} className="btn btn-primary btn-sm" style={{ textDecoration: 'none' }}>🎬 自分も録画する</a>
               </div>
             </div>
           </main>
@@ -614,12 +668,32 @@
       // ---- Recording ----
       const startScreenCapture = async () => {
         try {
-          const stream = await navigator.mediaDevices.getDisplayMedia({ video: { cursor:'always' }, audio: includeAudio });
+          // 画面キャプチャ（システム音声含む）
+          const stream = await navigator.mediaDevices.getDisplayMedia({
+            video: { cursor: 'always', frameRate: 30 },
+            audio: {
+              echoCancellation: true,
+              noiseSuppression: true,
+              sampleRate: 44100
+            }
+          });
           screenStreamRef.current = stream;
           if (screenVideoRef.current) screenVideoRef.current.srcObject = stream;
           setHasScreenStream(true);
           stream.getVideoTracks()[0].onended = () => stopRecording();
 
+          // マイク音声を取得（includeAudioがONの場合）
+          let micStream = null;
+          if (includeAudio) {
+            try {
+              micStream = await navigator.mediaDevices.getUserMedia({
+                audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+                video: false
+              });
+            } catch(e) { console.log('Mic not available, continuing without mic'); }
+          }
+
+          // カメラ映像を取得
           if (showCamera) {
             try {
               const camStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
@@ -627,8 +701,9 @@
               if (cameraVideoRef.current) cameraVideoRef.current.srcObject = camStream;
             } catch(e) { console.log('Camera not available'); }
           }
+
           await runCountdown();
-          beginRecording(stream);
+          beginRecording(stream, micStream);
         } catch(e) {
           console.error(e);
           toast('画面共有がキャンセルされました');
@@ -646,15 +721,60 @@
         }, 1000);
       });
 
-      const beginRecording = (stream) => {
+      const beginRecording = (screenStream, micStream) => {
         chunksRef.current = [];
-        const combinedStream = new MediaStream([...stream.getTracks()]);
+
+        // 音声トラックをミックス
+        const videoTrack = screenStream.getVideoTracks()[0];
+        let audioTracks = [];
+
+        const screenAudioTracks = screenStream.getAudioTracks();
+        const hasScreenAudio = screenAudioTracks.length > 0;
+        const hasMicAudio = micStream && micStream.getAudioTracks().length > 0;
+
+        if (hasScreenAudio || hasMicAudio) {
+          try {
+            const audioContext = new AudioContext();
+            const destination = audioContext.createMediaStreamDestination();
+
+            if (hasScreenAudio) {
+              const screenAudioSource = audioContext.createMediaStreamSource(
+                new MediaStream([screenAudioTracks[0]])
+              );
+              screenAudioSource.connect(destination);
+            }
+
+            if (hasMicAudio) {
+              const micSource = audioContext.createMediaStreamSource(micStream);
+              // マイクの音量を少し上げる
+              const micGain = audioContext.createGain();
+              micGain.gain.value = 1.5;
+              micSource.connect(micGain);
+              micGain.connect(destination);
+            }
+
+            audioTracks = destination.stream.getAudioTracks();
+          } catch (e) {
+            console.error('Audio mixing failed, falling back', e);
+            // フォールバック: ミックスできなければ利用可能な音声をそのまま使う
+            if (hasScreenAudio) audioTracks = screenAudioTracks;
+            else if (hasMicAudio) audioTracks = micStream.getAudioTracks();
+          }
+        }
+
+        const combinedStream = new MediaStream([videoTrack, ...audioTracks]);
         const recorder = new MediaRecorder(combinedStream, {
-          mimeType: MediaRecorder.isTypeSupported('video/webm;codecs=vp9') ? 'video/webm;codecs=vp9' : 'video/webm'
+          mimeType: MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')
+            ? 'video/webm;codecs=vp9,opus'
+            : MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
+              ? 'video/webm;codecs=vp9'
+              : 'video/webm'
         });
         recorder.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
         recorder.onstop = async () => {
           const blob = new Blob(chunksRef.current, { type: 'video/webm' });
+          // マイクストリームも停止
+          if (micStream) micStream.getTracks().forEach(t => t.stop());
           await saveNewRecording(blob);
           cleanupStreams();
         };
