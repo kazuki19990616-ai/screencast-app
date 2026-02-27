@@ -158,7 +158,7 @@
     function fmtS(b){return b<1048576?(b/1024).toFixed(1)+' KB':(b/1048576).toFixed(1)+' MB';}
     function Toast({message,show}){return <div className={`toast ${show?'show':''}`}>{message}</div>;}
 
-    function App(){const p=new URLSearchParams(location.search);const v=p.get('view'),ti=p.get('title');if(v)return <Viewer url={decodeURIComponent(v)} title={ti?decodeURIComponent(ti):null}/>;return <Main/>;}
+    function App(){const p=new URLSearchParams(location.search);const v=p.get('view'),ti=p.get('title');if(v)return <Viewer url={v} title={ti||null}/>;return <Main/>;}
 
     function Viewer({url,title}){
       const[err,setErr]=useState(false);const[spd,setSpd]=useState(1);const vr=useRef(null);
