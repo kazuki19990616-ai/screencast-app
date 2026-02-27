@@ -6,1283 +6,364 @@
   <title>ScreenCast - 画面録画アプリ</title>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
-    :root {
-      --bg-primary: #0a0a0f;
-      --bg-secondary: #12121a;
-      --bg-card: #1a1a26;
-      --bg-hover: #222233;
-      --accent: #ff4d6a;
-      --accent-glow: rgba(255, 77, 106, 0.3);
-      --accent-secondary: #7c5cff;
-      --accent-secondary-glow: rgba(124, 92, 255, 0.3);
-      --text-primary: #f0f0f5;
-      --text-secondary: #8888a0;
-      --text-muted: #55556a;
-      --border: #2a2a3a;
-      --success: #4ade80;
-      --warning: #fbbf24;
-      --danger: #ef4444;
-      --radius: 12px;
-      --radius-lg: 20px;
-      --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: 'Noto Sans JP', sans-serif;
-      background: var(--bg-primary);
-      color: var(--text-primary);
-      min-height: 100vh;
-      overflow-x: hidden;
-    }
-    body::before {
-      content: '';
-      position: fixed;
-      top: -50%; left: -50%;
-      width: 200%; height: 200%;
-      background: radial-gradient(ellipse at 20% 20%, rgba(124,92,255,0.08) 0%, transparent 50%),
-                  radial-gradient(ellipse at 80% 80%, rgba(255,77,106,0.06) 0%, transparent 50%);
-      z-index: 0; pointer-events: none;
-    }
-    .app { position: relative; z-index: 1; }
-
-    /* Header */
-    .header {
-      padding: 16px 32px;
-      display: flex; align-items: center; justify-content: space-between;
-      border-bottom: 1px solid var(--border);
-      backdrop-filter: blur(20px);
-      background: rgba(10,10,15,0.8);
-      position: sticky; top: 0; z-index: 100;
-    }
-    .logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 20px; letter-spacing: -0.5px; }
-    .logo-icon {
-      width: 36px; height: 36px;
-      background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
-      border-radius: 10px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 18px;
-      box-shadow: 0 4px 15px var(--accent-glow);
-    }
-    .nav-tabs { display: flex; gap: 4px; background: var(--bg-secondary); padding: 4px; border-radius: 10px; }
-    .nav-tab {
-      padding: 8px 20px; border-radius: 8px; border: none;
-      background: transparent; color: var(--text-secondary);
-      font-family: inherit; font-size: 14px; font-weight: 500;
-      cursor: pointer; transition: var(--transition);
-    }
-    .nav-tab.active { background: var(--bg-card); color: var(--text-primary); box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
-    .nav-tab:hover:not(.active) { color: var(--text-primary); }
-
-    .main { max-width: 1200px; margin: 0 auto; padding: 40px 32px; }
-
-    /* Record View */
-    .record-view { display: flex; flex-direction: column; align-items: center; gap: 32px; }
-    .preview-container {
-      position: relative; width: 100%; max-width: 900px; aspect-ratio: 16/9;
-      background: var(--bg-secondary); border-radius: var(--radius-lg);
-      overflow: hidden; border: 1px solid var(--border);
-      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-    }
-    .preview-container video, .preview-container .placeholder { width: 100%; height: 100%; object-fit: cover; }
-    .placeholder { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; color: var(--text-muted); }
-    .placeholder-icon { font-size: 64px; opacity: 0.3; }
-    .placeholder-text { font-size: 16px; font-weight: 500; }
-
-    .camera-bubble {
-      position: absolute; bottom: 20px; left: 20px;
-      width: 160px; height: 160px; border-radius: 50%;
-      overflow: hidden; border: 3px solid var(--accent);
-      box-shadow: 0 8px 30px rgba(0,0,0,0.6), 0 0 20px var(--accent-glow);
-      cursor: move; z-index: 10; transition: transform 0.2s ease;
-    }
-    .camera-bubble:hover { transform: scale(1.05); }
-    .camera-bubble video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
-
-    .recording-indicator {
-      position: absolute; top: 20px; left: 20px;
-      display: none; align-items: center; gap: 8px;
-      padding: 8px 16px; background: rgba(239,68,68,0.9);
-      border-radius: 20px; font-size: 13px; font-weight: 600;
-      backdrop-filter: blur(10px); z-index: 10;
-    }
-    .recording-indicator.active { display: flex; }
-    .rec-dot { width: 8px; height: 8px; background: white; border-radius: 50%; animation: pulse 1s ease-in-out infinite; }
-    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
-    .timer { font-family: 'JetBrains Mono', monospace; font-size: 13px; }
-
-    .controls { display: flex; align-items: center; gap: 16px; }
-    .btn {
-      display: flex; align-items: center; gap: 8px;
-      padding: 12px 28px; border: none; border-radius: var(--radius);
-      font-family: inherit; font-size: 15px; font-weight: 600;
-      cursor: pointer; transition: var(--transition); white-space: nowrap;
-    }
-    .btn-primary { background: linear-gradient(135deg, var(--accent), #ff2d50); color: white; box-shadow: 0 4px 20px var(--accent-glow); }
-    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 30px var(--accent-glow); }
-    .btn-primary:active { transform: translateY(0); }
-    .btn-secondary { background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border); }
-    .btn-secondary:hover { background: var(--bg-hover); border-color: var(--text-muted); }
-    .btn-stop { background: var(--danger); color: white; box-shadow: 0 4px 20px rgba(239,68,68,0.3); }
-    .btn-pause { background: var(--warning); color: #000; }
-    .btn-danger { background: transparent; color: var(--danger); border: 1px solid var(--danger); }
-    .btn-danger:hover { background: rgba(239,68,68,0.15); }
-    .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
-    .btn-sm { padding: 8px 18px; font-size: 13px; }
-    .btn-icon { font-size: 18px; }
-
-    .settings-row { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; }
-    .setting-card { display: flex; align-items: center; gap: 10px; padding: 12px 20px; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); }
-    .setting-label { font-size: 13px; color: var(--text-secondary); }
-    .toggle { position: relative; width: 44px; height: 24px; background: var(--bg-secondary); border-radius: 12px; cursor: pointer; transition: var(--transition); border: 1px solid var(--border); }
-    .toggle.active { background: var(--accent); border-color: var(--accent); }
-    .toggle::after { content:''; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; background: white; border-radius: 50%; transition: var(--transition); }
-    .toggle.active::after { left: 22px; }
-
-    /* Library */
-    .library-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 32px; flex-wrap: wrap; gap: 16px; }
-    .library-title { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; }
-    .library-count { color: var(--text-secondary); font-size: 14px; margin-top: 4px; }
-    .library-actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
-
-    .select-bar {
-      display: flex; align-items: center; gap: 16px;
-      padding: 12px 20px; margin-bottom: 20px;
-      background: var(--bg-card); border: 1px solid var(--accent);
-      border-radius: var(--radius);
-      animation: slideDown 0.25s ease;
-    }
-    @keyframes slideDown { from { opacity:0; transform: translateY(-8px); } to { opacity:1; transform: translateY(0); } }
-    .select-bar-count { font-size: 14px; font-weight: 600; color: var(--accent); }
-    .select-bar-actions { display: flex; gap: 8px; margin-left: auto; }
-
-    .recordings-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
-
-    .recording-card {
-      background: var(--bg-card); border: 1px solid var(--border);
-      border-radius: var(--radius-lg); overflow: hidden;
-      transition: var(--transition); position: relative;
-    }
-    .recording-card:hover { transform: translateY(-4px); box-shadow: 0 12px 40px rgba(0,0,0,0.4); }
-    .recording-card.selected { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-glow); }
-
-    .card-checkbox {
-      position: absolute; top: 12px; left: 12px; z-index: 10;
-      width: 24px; height: 24px;
-      appearance: none; -webkit-appearance: none;
-      background: rgba(0,0,0,0.6); border: 2px solid rgba(255,255,255,0.3);
-      border-radius: 6px; cursor: pointer; transition: var(--transition);
-      backdrop-filter: blur(8px);
-    }
-    .card-checkbox:checked {
-      background: var(--accent); border-color: var(--accent);
-    }
-    .card-checkbox:checked::after {
-      content: '✓'; display: flex; align-items: center; justify-content: center;
-      color: white; font-size: 14px; font-weight: 700;
-      width: 100%; height: 100%;
-    }
-    .card-checkbox:hover { border-color: var(--accent); }
-
-    .card-thumbnail { position: relative; aspect-ratio: 16/9; background: var(--bg-secondary); overflow: hidden; cursor: pointer; }
-    .card-thumbnail video { width: 100%; height: 100%; object-fit: cover; }
-    .card-duration {
-      position: absolute; bottom: 8px; right: 8px;
-      padding: 4px 10px; background: rgba(0,0,0,0.8);
-      border-radius: 6px; font-family: 'JetBrains Mono', monospace;
-      font-size: 12px; font-weight: 500;
-    }
-    .card-play {
-      position: absolute; top: 50%; left: 50%;
-      transform: translate(-50%,-50%);
-      width: 56px; height: 56px;
-      background: rgba(255,77,106,0.9); border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 24px; opacity: 0; transition: var(--transition);
-      box-shadow: 0 4px 20px var(--accent-glow);
-    }
-    .recording-card:hover .card-play { opacity: 1; }
-    .card-info { padding: 16px; }
-    .card-title { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
-    .card-title input {
-      background: transparent; border: none; color: var(--text-primary);
-      font-family: inherit; font-size: 15px; font-weight: 600;
-      width: 100%; outline: none;
-    }
-    .card-title input:focus { border-bottom: 1px solid var(--accent); }
-    .card-meta { font-size: 12px; color: var(--text-muted); display: flex; gap: 12px; }
-
-    .card-actions { display: flex; gap: 8px; padding: 0 16px 16px; flex-wrap: wrap; }
-    .card-btn {
-      padding: 6px 14px; border: 1px solid var(--border); border-radius: 8px;
-      background: transparent; color: var(--text-secondary);
-      font-family: inherit; font-size: 12px; cursor: pointer; transition: var(--transition);
-    }
-    .card-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
-    .card-btn.danger:hover { background: rgba(239,68,68,0.15); color: var(--danger); border-color: var(--danger); }
-    .card-btn.share { border-color: var(--accent-secondary); color: var(--accent-secondary); }
-    .card-btn.share:hover { background: rgba(124,92,255,0.15); }
-
-    /* Share status */
-    .share-status {
-      display: flex; align-items: center; gap: 6px;
-      font-size: 11px; color: var(--success);
-      margin-top: 6px;
-    }
-    .share-url {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 11px; color: var(--text-muted);
-      background: var(--bg-primary);
-      padding: 4px 8px; border-radius: 4px;
-      max-width: 200px; overflow: hidden;
-      text-overflow: ellipsis; white-space: nowrap;
-      cursor: pointer;
-    }
-    .share-url:hover { color: var(--text-primary); }
-
-    /* Uploading indicator */
-    .uploading-bar {
-      height: 3px; background: var(--bg-secondary);
-      border-radius: 2px; margin-top: 8px; overflow: hidden;
-    }
-    .uploading-bar-fill {
-      height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent-secondary));
-      border-radius: 2px; transition: width 0.3s ease;
-    }
-
-    /* Modal */
-    .modal-overlay {
-      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.85); backdrop-filter: blur(10px);
-      z-index: 200; display: flex; align-items: center; justify-content: center;
-      padding: 40px; opacity: 0; pointer-events: none; transition: var(--transition);
-    }
-    .modal-overlay.active { opacity: 1; pointer-events: all; }
-    .modal {
-      width: 100%; max-width: 960px;
-      background: var(--bg-card); border-radius: var(--radius-lg);
-      overflow: hidden; border: 1px solid var(--border);
-      transform: scale(0.95); transition: var(--transition);
-    }
-    .modal-overlay.active .modal { transform: scale(1); }
-    .modal-video { width: 100%; aspect-ratio: 16/9; background: black; }
-    .modal-video video { width: 100%; height: 100%; object-fit: contain; }
-    .modal-controls { padding: 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
-    .modal-close {
-      position: absolute; top: 20px; right: 20px;
-      width: 40px; height: 40px; border-radius: 50%;
-      background: rgba(255,255,255,0.1); border: none;
-      color: white; font-size: 20px; cursor: pointer;
-      transition: var(--transition); z-index: 210;
-    }
-    .modal-close:hover { background: rgba(255,255,255,0.2); }
-
-    /* Share Config Modal */
-    .config-modal {
-      width: 100%; max-width: 560px;
-      background: var(--bg-card); border-radius: var(--radius-lg);
-      padding: 32px; border: 1px solid var(--border);
-      transform: scale(0.95); transition: var(--transition);
-    }
-    .modal-overlay.active .config-modal { transform: scale(1); }
-    .config-title { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
-    .config-subtitle { color: var(--text-secondary); font-size: 14px; margin-bottom: 24px; }
-    .config-field { margin-bottom: 20px; }
-    .config-label { font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 8px; display: block; }
-    .config-input {
-      width: 100%; padding: 12px 16px;
-      background: var(--bg-primary); border: 1px solid var(--border);
-      border-radius: var(--radius); color: var(--text-primary);
-      font-family: 'JetBrains Mono', monospace; font-size: 13px;
-      outline: none; transition: var(--transition);
-    }
-    .config-input:focus { border-color: var(--accent-secondary); }
-    .config-hint { font-size: 12px; color: var(--text-muted); margin-top: 6px; line-height: 1.6; }
-    .config-actions { display: flex; gap: 12px; justify-content: flex-end; margin-top: 28px; }
-
-    /* Deploy Guide */
-    .deploy-view { max-width: 800px; margin: 0 auto; }
-    .deploy-title { font-size: 28px; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.5px; }
-    .deploy-subtitle { color: var(--text-secondary); font-size: 15px; margin-bottom: 40px; }
-    .deploy-step {
-      background: var(--bg-card); border: 1px solid var(--border);
-      border-radius: var(--radius-lg); padding: 28px; margin-bottom: 20px;
-      transition: var(--transition);
-    }
-    .deploy-step:hover { border-color: var(--accent-secondary); }
-    .step-header { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; }
-    .step-number {
-      width: 36px; height: 36px;
-      background: linear-gradient(135deg, var(--accent-secondary), var(--accent));
-      border-radius: 10px; display: flex; align-items: center; justify-content: center;
-      font-weight: 700; font-size: 15px; flex-shrink: 0;
-    }
-    .step-title { font-size: 18px; font-weight: 600; }
-    .step-content { color: var(--text-secondary); font-size: 14px; line-height: 1.8; padding-left: 52px; }
-    .code-block {
-      background: var(--bg-primary); border: 1px solid var(--border);
-      border-radius: 10px; padding: 16px 20px; margin: 12px 0;
-      font-family: 'JetBrains Mono', monospace; font-size: 13px;
-      color: var(--success); overflow-x: auto; position: relative;
-    }
-    .code-block .copy-btn {
-      position: absolute; top: 8px; right: 8px;
-      padding: 4px 10px; background: var(--bg-card);
-      border: 1px solid var(--border); border-radius: 6px;
-      color: var(--text-secondary); font-size: 11px;
-      cursor: pointer; font-family: inherit;
-    }
-    .code-block .copy-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
-
-    .empty-state { text-align: center; padding: 80px 20px; }
-    .empty-icon { font-size: 72px; margin-bottom: 20px; opacity: 0.3; }
-    .empty-title { font-size: 20px; font-weight: 600; margin-bottom: 8px; }
-    .empty-text { color: var(--text-secondary); font-size: 14px; }
-
-    .toast {
-      position: fixed; bottom: 32px; left: 50%;
-      transform: translateX(-50%) translateY(100px);
-      padding: 14px 28px; background: var(--bg-card);
-      border: 1px solid var(--border); border-radius: var(--radius);
-      font-size: 14px; font-weight: 500; z-index: 300;
-      transition: var(--transition); box-shadow: 0 8px 30px rgba(0,0,0,0.5);
-    }
-    .toast.show { transform: translateX(-50%) translateY(0); }
-
-    .countdown-overlay {
-      position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.7);
-      display: flex; align-items: center; justify-content: center; z-index: 20;
-    }
-    .countdown-number { font-size: 120px; font-weight: 700; color: white; animation: countdownPulse 1s ease-in-out; }
-    @keyframes countdownPulse { 0%{transform:scale(0.5);opacity:0} 50%{transform:scale(1.2);opacity:1} 100%{transform:scale(1);opacity:1} }
-
-    /* Share viewer page */
-    .viewer-page {
-      display: flex; flex-direction: column; align-items: center;
-      justify-content: center; min-height: 80vh; gap: 24px;
-      padding: 20px;
-    }
-    .viewer-page video {
-      max-width: 960px; width: 100%; aspect-ratio: 16/9;
-      border-radius: var(--radius-lg);
-      border: 1px solid var(--border);
-      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-      background: black;
-      object-fit: contain;
-    }
-
-    @media (max-width: 768px) {
-      .header { padding: 12px 16px; }
-      .main { padding: 20px 16px; }
-      .logo span { display: none; }
-      .recordings-grid { grid-template-columns: 1fr; }
-      .settings-row { flex-direction: column; align-items: center; }
-      .camera-bubble { width: 100px; height: 100px; }
-      .library-header { flex-direction: column; }
-    }
+    :root{--bg-primary:#0a0a0f;--bg-secondary:#12121a;--bg-card:#1a1a26;--bg-hover:#222233;--accent:#ff4d6a;--accent-glow:rgba(255,77,106,0.3);--accent-secondary:#7c5cff;--text-primary:#f0f0f5;--text-secondary:#8888a0;--text-muted:#55556a;--border:#2a2a3a;--success:#4ade80;--warning:#fbbf24;--danger:#ef4444;--radius:12px;--radius-lg:20px;--transition:all 0.3s cubic-bezier(0.4,0,0.2,1)}
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Noto Sans JP',sans-serif;background:var(--bg-primary);color:var(--text-primary);min-height:100vh;overflow-x:hidden}
+    body::before{content:'';position:fixed;top:-50%;left:-50%;width:200%;height:200%;background:radial-gradient(ellipse at 20% 20%,rgba(124,92,255,0.08) 0%,transparent 50%),radial-gradient(ellipse at 80% 80%,rgba(255,77,106,0.06) 0%,transparent 50%);z-index:0;pointer-events:none}
+    .app{position:relative;z-index:1}
+    .header{padding:16px 32px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);backdrop-filter:blur(20px);background:rgba(10,10,15,0.8);position:sticky;top:0;z-index:100}
+    .logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:20px;letter-spacing:-0.5px}
+    .logo-icon{width:36px;height:36px;background:linear-gradient(135deg,var(--accent),var(--accent-secondary));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 4px 15px var(--accent-glow)}
+    .nav-tabs{display:flex;gap:4px;background:var(--bg-secondary);padding:4px;border-radius:10px}
+    .nav-tab{padding:8px 20px;border-radius:8px;border:none;background:transparent;color:var(--text-secondary);font-family:inherit;font-size:14px;font-weight:500;cursor:pointer;transition:var(--transition)}
+    .nav-tab.active{background:var(--bg-card);color:var(--text-primary);box-shadow:0 2px 8px rgba(0,0,0,0.3)}
+    .nav-tab:hover:not(.active){color:var(--text-primary)}
+    .main{max-width:1200px;margin:0 auto;padding:40px 32px}
+    .record-view{display:flex;flex-direction:column;align-items:center;gap:32px}
+    .preview-container{position:relative;width:100%;max-width:900px;aspect-ratio:16/9;background:var(--bg-secondary);border-radius:var(--radius-lg);overflow:hidden;border:1px solid var(--border);box-shadow:0 20px 60px rgba(0,0,0,0.5)}
+    .preview-container video,.preview-container .placeholder{width:100%;height:100%;object-fit:cover}
+    .placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;color:var(--text-muted)}
+    .placeholder-icon{font-size:64px;opacity:0.3}
+    .placeholder-text{font-size:16px;font-weight:500}
+    .camera-bubble{position:absolute;bottom:20px;left:20px;width:160px;height:160px;border-radius:50%;overflow:hidden;border:3px solid var(--accent);box-shadow:0 8px 30px rgba(0,0,0,0.6),0 0 20px var(--accent-glow);z-index:10;transition:transform 0.2s ease}
+    .camera-bubble:hover{transform:scale(1.05)}
+    .camera-bubble video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
+    .recording-indicator{position:absolute;top:20px;left:20px;display:none;align-items:center;gap:8px;padding:8px 16px;background:rgba(239,68,68,0.9);border-radius:20px;font-size:13px;font-weight:600;backdrop-filter:blur(10px);z-index:10}
+    .recording-indicator.active{display:flex}
+    .rec-dot{width:8px;height:8px;background:white;border-radius:50%;animation:pulse 1s ease-in-out infinite}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+    .timer{font-family:'JetBrains Mono',monospace;font-size:13px}
+    .controls{display:flex;align-items:center;gap:16px;flex-wrap:wrap;justify-content:center}
+    .btn{display:flex;align-items:center;gap:8px;padding:12px 28px;border:none;border-radius:var(--radius);font-family:inherit;font-size:15px;font-weight:600;cursor:pointer;transition:var(--transition);white-space:nowrap}
+    .btn-primary{background:linear-gradient(135deg,var(--accent),#ff2d50);color:white;box-shadow:0 4px 20px var(--accent-glow)}
+    .btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 30px var(--accent-glow)}
+    .btn-primary:active{transform:translateY(0)}
+    .btn-secondary{background:var(--bg-card);color:var(--text-primary);border:1px solid var(--border)}
+    .btn-secondary:hover{background:var(--bg-hover);border-color:var(--text-muted)}
+    .btn-stop{background:var(--danger);color:white;box-shadow:0 4px 20px rgba(239,68,68,0.3)}
+    .btn-pause{background:var(--warning);color:#000}
+    .btn-danger{background:transparent;color:var(--danger);border:1px solid var(--danger)}
+    .btn-danger:hover{background:rgba(239,68,68,0.15)}
+    .btn:disabled{opacity:0.5;cursor:not-allowed;transform:none!important}
+    .btn-sm{padding:8px 18px;font-size:13px}
+    .settings-row{display:flex;gap:16px;flex-wrap:wrap;justify-content:center}
+    .setting-card{display:flex;align-items:center;gap:10px;padding:12px 20px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius)}
+    .setting-label{font-size:13px;color:var(--text-secondary)}
+    .toggle{position:relative;width:44px;height:24px;background:var(--bg-secondary);border-radius:12px;cursor:pointer;transition:var(--transition);border:1px solid var(--border)}
+    .toggle.active{background:var(--accent);border-color:var(--accent)}
+    .toggle::after{content:'';position:absolute;top:2px;left:2px;width:18px;height:18px;background:white;border-radius:50%;transition:var(--transition)}
+    .toggle.active::after{left:22px}
+    .library-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:32px;flex-wrap:wrap;gap:16px}
+    .library-title{font-size:28px;font-weight:700;letter-spacing:-0.5px}
+    .library-count{color:var(--text-secondary);font-size:14px;margin-top:4px}
+    .library-actions{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+    .select-bar{display:flex;align-items:center;gap:16px;padding:12px 20px;margin-bottom:20px;background:var(--bg-card);border:1px solid var(--accent);border-radius:var(--radius);animation:slideDown 0.25s ease;flex-wrap:wrap}
+    @keyframes slideDown{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+    .select-bar-count{font-size:14px;font-weight:600;color:var(--accent)}
+    .select-bar-actions{display:flex;gap:8px;margin-left:auto}
+    .recordings-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:20px}
+    .recording-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;transition:var(--transition);position:relative}
+    .recording-card:hover{transform:translateY(-4px);box-shadow:0 12px 40px rgba(0,0,0,0.4)}
+    .recording-card.selected{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-glow)}
+    .card-checkbox{position:absolute;top:12px;left:12px;z-index:10;width:24px;height:24px;appearance:none;-webkit-appearance:none;background:rgba(0,0,0,0.6);border:2px solid rgba(255,255,255,0.3);border-radius:6px;cursor:pointer;transition:var(--transition);backdrop-filter:blur(8px)}
+    .card-checkbox:checked{background:var(--accent);border-color:var(--accent)}
+    .card-checkbox:checked::after{content:'✓';display:flex;align-items:center;justify-content:center;color:white;font-size:14px;font-weight:700;width:100%;height:100%}
+    .card-checkbox:hover{border-color:var(--accent)}
+    .card-thumbnail{position:relative;aspect-ratio:16/9;background:var(--bg-secondary);overflow:hidden;cursor:pointer}
+    .card-thumbnail video{width:100%;height:100%;object-fit:cover}
+    .card-duration{position:absolute;bottom:8px;right:8px;padding:4px 10px;background:rgba(0,0,0,0.8);border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:500}
+    .card-play{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:56px;height:56px;background:rgba(255,77,106,0.9);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;opacity:0;transition:var(--transition);box-shadow:0 4px 20px var(--accent-glow)}
+    .recording-card:hover .card-play{opacity:1}
+    .card-info{padding:16px}
+    .card-title{font-size:15px;font-weight:600;margin-bottom:6px}
+    .card-title input{background:transparent;border:none;color:var(--text-primary);font-family:inherit;font-size:15px;font-weight:600;width:100%;outline:none}
+    .card-title input:focus{border-bottom:1px solid var(--accent)}
+    .card-meta{font-size:12px;color:var(--text-muted);display:flex;gap:12px}
+    .card-actions{display:flex;gap:8px;padding:0 16px 16px;flex-wrap:wrap}
+    .card-btn{padding:6px 14px;border:1px solid var(--border);border-radius:8px;background:transparent;color:var(--text-secondary);font-family:inherit;font-size:12px;cursor:pointer;transition:var(--transition)}
+    .card-btn:hover{background:var(--bg-hover);color:var(--text-primary)}
+    .card-btn.danger:hover{background:rgba(239,68,68,0.15);color:var(--danger);border-color:var(--danger)}
+    .card-btn.share{border-color:var(--accent-secondary);color:var(--accent-secondary)}
+    .card-btn.share:hover{background:rgba(124,92,255,0.15)}
+    .share-status{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--success);margin-top:6px}
+    .share-url{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--accent-secondary);background:var(--bg-primary);padding:4px 8px;border-radius:4px;cursor:pointer;transition:var(--transition)}
+    .share-url:hover{color:var(--text-primary);background:var(--bg-hover)}
+    .uploading-bar{height:3px;background:var(--bg-secondary);border-radius:2px;margin-top:8px;overflow:hidden}
+    .uploading-bar-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent-secondary));border-radius:2px;transition:width 0.3s ease}
+    .modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);backdrop-filter:blur(10px);z-index:200;display:flex;align-items:center;justify-content:center;padding:40px;opacity:0;pointer-events:none;transition:var(--transition)}
+    .modal-overlay.active{opacity:1;pointer-events:all}
+    .modal{width:100%;max-width:960px;background:var(--bg-card);border-radius:var(--radius-lg);overflow:hidden;border:1px solid var(--border);transform:scale(0.95);transition:var(--transition)}
+    .modal-overlay.active .modal{transform:scale(1)}
+    .modal-video{width:100%;aspect-ratio:16/9;background:black}
+    .modal-video video{width:100%;height:100%;object-fit:contain}
+    .modal-controls{padding:20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+    .modal-close{position:absolute;top:20px;right:20px;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,0.1);border:none;color:white;font-size:20px;cursor:pointer;transition:var(--transition);z-index:210}
+    .modal-close:hover{background:rgba(255,255,255,0.2)}
+    .speed-controls{display:flex;gap:4px;align-items:center}
+    .speed-btn{padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--text-secondary);font-family:'JetBrains Mono',monospace;font-size:11px;cursor:pointer;transition:var(--transition)}
+    .speed-btn.active{background:var(--accent);color:white;border-color:var(--accent)}
+    .speed-btn:hover:not(.active){background:var(--bg-hover)}
+    .config-modal{width:100%;max-width:560px;background:var(--bg-card);border-radius:var(--radius-lg);padding:32px;border:1px solid var(--border);transform:scale(0.95);transition:var(--transition);max-height:90vh;overflow-y:auto}
+    .modal-overlay.active .config-modal{transform:scale(1)}
+    .config-title{font-size:20px;font-weight:700;margin-bottom:8px}
+    .config-subtitle{color:var(--text-secondary);font-size:14px;margin-bottom:24px}
+    .config-field{margin-bottom:16px}
+    .config-label{font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;display:block}
+    .config-input{width:100%;padding:10px 14px;background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-primary);font-family:'JetBrains Mono',monospace;font-size:13px;outline:none;transition:var(--transition)}
+    .config-input:focus{border-color:var(--accent-secondary)}
+    .config-actions{display:flex;gap:12px;justify-content:flex-end;margin-top:24px}
+    .viewer-page{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:80vh;gap:24px;padding:20px}
+    .viewer-title{font-size:20px;font-weight:700;text-align:center}
+    .viewer-video-wrap{width:100%;max-width:960px;aspect-ratio:16/9;background:black;border-radius:var(--radius-lg);overflow:hidden;border:1px solid var(--border);box-shadow:0 20px 60px rgba(0,0,0,0.5)}
+    .viewer-video-wrap video{width:100%;height:100%;object-fit:contain}
+    .empty-state{text-align:center;padding:80px 20px}
+    .empty-icon{font-size:72px;margin-bottom:20px;opacity:0.3}
+    .empty-title{font-size:20px;font-weight:600;margin-bottom:8px}
+    .empty-text{color:var(--text-secondary);font-size:14px}
+    .toast{position:fixed;bottom:32px;left:50%;transform:translateX(-50%) translateY(100px);padding:14px 28px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);font-size:14px;font-weight:500;z-index:300;transition:var(--transition);box-shadow:0 8px 30px rgba(0,0,0,0.5)}
+    .toast.show{transform:translateX(-50%) translateY(0)}
+    .countdown-overlay{position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:20}
+    .countdown-number{font-size:120px;font-weight:700;color:white;animation:cPulse 1s ease-in-out}
+    @keyframes cPulse{0%{transform:scale(0.5);opacity:0}50%{transform:scale(1.2);opacity:1}100%{transform:scale(1);opacity:1}}
+    .info-box{background:var(--bg-primary);border:1px solid var(--border);border-radius:12px;padding:16px 20px;font-size:13px;color:var(--text-secondary);line-height:1.8}
+    .code-inline{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--success);background:var(--bg-secondary);padding:8px 12px;border-radius:8px;display:block;margin:8px 0;word-break:break-all}
+    @media(max-width:768px){.header{padding:12px 16px}.main{padding:20px 16px}.logo span{display:none}.recordings-grid{grid-template-columns:1fr}.settings-row{flex-direction:column;align-items:center}.camera-bubble{width:100px;height:100px}.library-header{flex-direction:column}}
   </style>
 </head>
 <body>
   <div id="app"></div>
-
-  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
-
   <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
   <script type="text/babel">
-    const { useState, useEffect, useRef, useCallback } = React;
+    const{useState,useEffect,useRef}=React;
+    const DB='ScreenCastDB',VER=2,ST='recordings';
+    function openDB(){return new Promise((r,j)=>{const q=indexedDB.open(DB,VER);q.onerror=()=>j(q.error);q.onsuccess=()=>r(q.result);q.onupgradeneeded=e=>{const d=e.target.result;if(!d.objectStoreNames.contains(ST))d.createObjectStore(ST,{keyPath:'id'});};})}
+    async function dbPut(rec){const d=await openDB();return new Promise((r,j)=>{const t=d.transaction(ST,'readwrite');t.objectStore(ST).put(rec);t.oncomplete=()=>r();t.onerror=()=>j(t.error);})}
+    async function dbAll(){const d=await openDB();return new Promise((r,j)=>{const t=d.transaction(ST,'readonly');const q=t.objectStore(ST).getAll();q.onsuccess=()=>r(q.result);q.onerror=()=>j(q.error);})}
+    async function dbDel(id){const d=await openDB();return new Promise((r,j)=>{const t=d.transaction(ST,'readwrite');t.objectStore(ST).delete(id);t.oncomplete=()=>r();t.onerror=()=>j(t.error);})}
+    async function dbUpd(id,f){const d=await openDB();return new Promise((r,j)=>{const t=d.transaction(ST,'readwrite');const s=t.objectStore(ST);const q=s.get(id);q.onsuccess=()=>{Object.assign(q.result,f);s.put(q.result);};t.oncomplete=()=>r();t.onerror=()=>j(t.error);})}
 
-    // ============ IndexedDB ============
-    const DB_NAME = 'ScreenCastDB';
-    const DB_VERSION = 2;
-    const STORE_NAME = 'recordings';
+    let fbApp=null,fbSt=null;
+    function initFB(c){try{if(!fbApp)fbApp=firebase.initializeApp(c);fbSt=firebase.storage();return true;}catch(e){return false;}}
+    function getFBC(){try{const s=localStorage.getItem('sc_fb');return s?JSON.parse(s):null;}catch{return null;}}
+    function saveFBC(c){localStorage.setItem('sc_fb',JSON.stringify(c));}
+    async function fbUp(blob,fn,onP){if(!fbSt)throw Error('No FB');const ref=fbSt.ref().child('recordings/'+fn);const t=ref.put(blob);return new Promise((r,j)=>{t.on('state_changed',s=>{if(onP)onP(s.bytesTransferred/s.totalBytes);},j,async()=>{r(await t.snapshot.ref.getDownloadURL());});})}
+    async function fbDel(url){if(!fbSt)return;try{fbSt.refFromURL(url).delete();}catch(e){}}
 
-    function openDB() {
-      return new Promise((resolve, reject) => {
-        const request = indexedDB.open(DB_NAME, DB_VERSION);
-        request.onerror = () => reject(request.error);
-        request.onsuccess = () => resolve(request.result);
-        request.onupgradeneeded = (e) => {
-          const db = e.target.result;
-          if (!db.objectStoreNames.contains(STORE_NAME)) {
-            db.createObjectStore(STORE_NAME, { keyPath: 'id' });
-          }
-        };
-      });
-    }
-    async function saveRecording(recording) {
-      const db = await openDB();
-      return new Promise((resolve, reject) => {
-        const tx = db.transaction(STORE_NAME, 'readwrite');
-        tx.objectStore(STORE_NAME).put(recording);
-        tx.oncomplete = () => resolve();
-        tx.onerror = () => reject(tx.error);
-      });
-    }
-    async function getAllRecordings() {
-      const db = await openDB();
-      return new Promise((resolve, reject) => {
-        const tx = db.transaction(STORE_NAME, 'readonly');
-        const req = tx.objectStore(STORE_NAME).getAll();
-        req.onsuccess = () => resolve(req.result);
-        req.onerror = () => reject(req.error);
-      });
-    }
-    async function deleteRecording(id) {
-      const db = await openDB();
-      return new Promise((resolve, reject) => {
-        const tx = db.transaction(STORE_NAME, 'readwrite');
-        tx.objectStore(STORE_NAME).delete(id);
-        tx.oncomplete = () => resolve();
-        tx.onerror = () => reject(tx.error);
-      });
-    }
-    async function updateRecordingField(id, fields) {
-      const db = await openDB();
-      return new Promise((resolve, reject) => {
-        const tx = db.transaction(STORE_NAME, 'readwrite');
-        const store = tx.objectStore(STORE_NAME);
-        const req = store.get(id);
-        req.onsuccess = () => {
-          const rec = req.result;
-          Object.assign(rec, fields);
-          store.put(rec);
-        };
-        tx.oncomplete = () => resolve();
-        tx.onerror = () => reject(tx.error);
-      });
-    }
+    function fmt(s){const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sc=Math.floor(s%60);return h>0?`${h}:${String(m).padStart(2,'0')}:${String(sc).padStart(2,'0')}`:`${m}:${String(sc).padStart(2,'0')}`;}
+    function fmtD(ts){return new Date(ts).toLocaleDateString('ja-JP',{year:'numeric',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});}
+    function fmtS(b){return b<1048576?(b/1024).toFixed(1)+' KB':(b/1048576).toFixed(1)+' MB';}
+    function Toast({message,show}){return <div className={`toast ${show?'show':''}`}>{message}</div>;}
 
-    // ============ Firebase ============
-    let firebaseApp = null;
-    let storage = null;
+    function App(){const p=new URLSearchParams(location.search);const v=p.get('view'),ti=p.get('title');if(v)return <Viewer url={decodeURIComponent(v)} title={ti?decodeURIComponent(ti):null}/>;return <Main/>;}
 
-    function initFirebase(config) {
-      try {
-        if (firebaseApp) { /* already initialized */ return true; }
-        firebaseApp = firebase.initializeApp(config);
-        storage = firebase.storage();
-        return true;
-      } catch (e) {
-        console.error('Firebase init error:', e);
-        return false;
-      }
-    }
-
-    function getFirebaseConfig() {
-      try {
-        const saved = localStorage.getItem('screencast_firebase_config');
-        return saved ? JSON.parse(saved) : null;
-      } catch { return null; }
-    }
-
-    function saveFirebaseConfig(config) {
-      localStorage.setItem('screencast_firebase_config', JSON.stringify(config));
-    }
-
-    async function uploadToFirebase(blob, filename, onProgress) {
-      if (!storage) throw new Error('Firebase not initialized');
-      const ref = storage.ref().child(`recordings/${filename}`);
-      const task = ref.put(blob);
-      return new Promise((resolve, reject) => {
-        task.on('state_changed',
-          (snap) => { if (onProgress) onProgress(snap.bytesTransferred / snap.totalBytes); },
-          reject,
-          async () => {
-            const url = await task.snapshot.ref.getDownloadURL();
-            resolve(url);
-          }
-        );
-      });
-    }
-
-    async function deleteFromFirebase(url) {
-      if (!storage) return;
-      try {
-        const ref = storage.refFromURL(url);
-        await ref.delete();
-      } catch (e) { console.error('Firebase delete error:', e); }
-    }
-
-    // ============ Utility ============
-    function formatTime(seconds) {
-      const h = Math.floor(seconds / 3600);
-      const m = Math.floor((seconds % 3600) / 60);
-      const s = Math.floor(seconds % 60);
-      if (h > 0) return `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-      return `${m}:${String(s).padStart(2,'0')}`;
-    }
-    function formatDate(ts) {
-      return new Date(ts).toLocaleDateString('ja-JP', { year:'numeric', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
-    }
-    function formatFileSize(bytes) {
-      if (bytes < 1024*1024) return (bytes/1024).toFixed(1)+' KB';
-      return (bytes/(1024*1024)).toFixed(1)+' MB';
-    }
-
-    function Toast({ message, show }) {
-      return <div className={`toast ${show ? 'show' : ''}`}>{message}</div>;
-    }
-
-    // ============ Check if shared viewer mode ============
-    function getShareId() {
-      const params = new URLSearchParams(window.location.search);
-      return params.get('view');
-    }
-
-    // ============ App ============
-    function App() {
-      const shareId = getShareId();
-      if (shareId) return <SharedViewer url={decodeURIComponent(shareId)} />;
-      return <MainApp />;
-    }
-
-    function SharedViewer({ url }) {
-      const videoRef = useRef(null);
-      const [loading, setLoading] = useState(true);
-      const [error, setError] = useState(null);
-
-      useEffect(() => {
-        let blobUrl = null;
-        (async () => {
-          try {
-            setLoading(true);
-            const resp = await fetch(url);
-            if (!resp.ok) throw new Error('動画の取得に失敗しました');
-            const blob = await resp.blob();
-            blobUrl = URL.createObjectURL(blob);
-            if (videoRef.current) {
-              videoRef.current.src = blobUrl;
-              videoRef.current.play().catch(() => {});
-            }
-            setLoading(false);
-          } catch (e) {
-            console.error(e);
-            setError('動画の読み込みに失敗しました。リンクが無効か期限切れの可能性があります。');
-            setLoading(false);
-          }
-        })();
-        return () => { if (blobUrl) URL.revokeObjectURL(blobUrl); };
-      }, [url]);
-
-      return (
+    function Viewer({url,title}){
+      const[err,setErr]=useState(false);const[spd,setSpd]=useState(1);const vr=useRef(null);
+      const cs=s=>{setSpd(s);if(vr.current)vr.current.playbackRate=s;};
+      return(
         <div className="app">
-          <header className="header">
-            <div className="logo">
-              <div className="logo-icon">⏺</div>
-              <span>ScreenCast</span>
+          <header className="header"><div className="logo"><div className="logo-icon">⏺</div><span>ScreenCast</span></div></header>
+          <main className="main"><div className="viewer-page">
+            {title&&<div className="viewer-title">{title}</div>}
+            <div className="viewer-video-wrap">
+              <video ref={vr} src={url} controls autoPlay controlsList="nodownload" disablePictureInPicture onContextMenu={e=>e.preventDefault()} onError={()=>setErr(true)}/>
             </div>
-          </header>
-          <main className="main">
-            <div className="viewer-page">
-              {loading && (
-                <div style={{ color: 'var(--text-secondary)', fontSize: 16, padding: 40 }}>
-                  <span style={{ fontSize: 32, display: 'block', marginBottom: 12 }}>⏳</span>
-                  動画を読み込み中...
-                </div>
-              )}
-              {error && (
-                <div style={{ color: 'var(--danger)', fontSize: 16, padding: 40, textAlign: 'center' }}>
-                  <span style={{ fontSize: 32, display: 'block', marginBottom: 12 }}>⚠️</span>
-                  {error}
-                </div>
-              )}
-              <video
-                ref={videoRef}
-                controls
-                controlsList="nodownload"
-                disablePictureInPicture
-                onContextMenu={(e) => e.preventDefault()}
-                style={{
-                  maxWidth: 960, width: '100%', aspectRatio: '16/9',
-                  borderRadius: 20, border: '1px solid var(--border)',
-                  background: 'black', objectFit: 'contain',
-                  display: loading ? 'none' : 'block'
-                }}
-              />
-              <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
-                <a href={window.location.origin + window.location.pathname} className="btn btn-primary btn-sm" style={{ textDecoration: 'none' }}>🎬 自分も録画する</a>
+            {err&&<div className="info-box" style={{borderColor:'var(--danger)',maxWidth:700}}>
+              <span style={{color:'var(--danger)'}}>⚠️ 動画の再生に失敗しました。Firebase StorageのCORS設定が必要です。</span><br/><br/>
+              <strong style={{color:'var(--text-primary)'}}>解決方法：</strong> Firebase Console 右上の <strong>Cloud Shell</strong> アイコン（ターミナル）をクリックし、以下の2行を実行：
+              <code className="code-inline">echo '[{"{"}"origin":["*"],"method":["GET"],"maxAgeSeconds":3600{"}"}]' &gt; cors.json</code>
+              <code className="code-inline">gsutil cors set cors.json gs://<span style={{color:'var(--warning)'}}>あなたのstorageBucket名</span></code>
+              <span style={{fontSize:11,color:'var(--text-muted)'}}>storageBucket名はFirebase設定画面で確認できます（例: videoshare-like-loom.firebasestorage.app）</span>
+            </div>}
+            <div style={{display:'flex',gap:12,alignItems:'center',flexWrap:'wrap',justifyContent:'center'}}>
+              <div className="speed-controls"><span style={{fontSize:12,color:'var(--text-muted)',marginRight:4}}>速度:</span>
+                {[0.5,0.75,1,1.25,1.5,2].map(s=><button key={s} className={`speed-btn ${spd===s?'active':''}`} onClick={()=>cs(s)}>{s}x</button>)}
               </div>
+              <a href={location.origin+location.pathname} className="btn btn-primary btn-sm" style={{textDecoration:'none'}}>🎬 自分も録画する</a>
             </div>
-          </main>
+          </div></main>
         </div>
       );
     }
 
-    // ============ Main App ============
-    function MainApp() {
-      const [tab, setTab] = useState('record');
-      const [recordings, setRecordings] = useState([]);
-      const [isRecording, setIsRecording] = useState(false);
-      const [isPaused, setIsPaused] = useState(false);
-      const [elapsed, setElapsed] = useState(0);
-      const [showCamera, setShowCamera] = useState(true);
-      const [showCountdown, setShowCountdown] = useState(false);
-      const [countdownNum, setCountdownNum] = useState(3);
-      const [hasScreenStream, setHasScreenStream] = useState(false);
-      const [playingRecording, setPlayingRecording] = useState(null);
-      const [toastMsg, setToastMsg] = useState('');
-      const [showToast, setShowToast] = useState(false);
-      const [includeAudio, setIncludeAudio] = useState(true);
-      const [selectedIds, setSelectedIds] = useState(new Set());
-      const [showFirebaseConfig, setShowFirebaseConfig] = useState(false);
-      const [firebaseReady, setFirebaseReady] = useState(false);
-      const [uploadingIds, setUploadingIds] = useState({});
+    function Main(){
+      const[tab,setTab]=useState('record');const[recs,setRecs]=useState([]);const[isRec,setIsRec]=useState(false);const[isPaus,setIsPaus]=useState(false);const[elapsed,setElapsed]=useState(0);const[cam,setCam]=useState(true);const[showCD,setShowCD]=useState(false);const[cdNum,setCdNum]=useState(3);const[hasScr,setHasScr]=useState(false);const[playing,setPlaying]=useState(null);const[tMsg,setTMsg]=useState('');const[tShow,setTShow]=useState(false);const[mic,setMic]=useState(true);const[sel,setSel]=useState(new Set());const[showFB,setShowFB]=useState(false);const[fbOk,setFbOk]=useState(false);const[upIds,setUpIds]=useState({});
+      const svRef=useRef(null),cvRef=useRef(null),mrRef=useRef(null),ssRef=useRef(null),csRef=useRef(null),msRef=useRef(null),chRef=useRef([]),tmRef=useRef(null),stRef=useRef(0),ptRef=useRef(0);
+      useEffect(()=>{load();const c=getFBC();if(c)setFbOk(initFB(c));},[]);
+      const load=async()=>{try{setRecs((await dbAll()).sort((a,b)=>b.createdAt-a.createdAt));}catch(e){}};
+      const toast=m=>{setTMsg(m);setTShow(true);setTimeout(()=>setTShow(false),3000);};
 
-      const screenVideoRef = useRef(null);
-      const cameraVideoRef = useRef(null);
-      const mediaRecorderRef = useRef(null);
-      const screenStreamRef = useRef(null);
-      const cameraStreamRef = useRef(null);
-      const chunksRef = useRef([]);
-      const timerRef = useRef(null);
-      const startTimeRef = useRef(0);
-      const pausedTimeRef = useRef(0);
-
-      useEffect(() => {
-        loadRecordings();
-        const config = getFirebaseConfig();
-        if (config) {
-          const ok = initFirebase(config);
-          setFirebaseReady(ok);
-        }
-      }, []);
-
-      const loadRecordings = async () => {
-        try {
-          const recs = await getAllRecordings();
-          setRecordings(recs.sort((a,b) => b.createdAt - a.createdAt));
-        } catch(e) { console.error(e); }
+      const startCap=async()=>{
+        try{
+          const s=await navigator.mediaDevices.getDisplayMedia({video:{cursor:'always',frameRate:30},audio:{echoCancellation:true,noiseSuppression:true,sampleRate:44100}});
+          ssRef.current=s;if(svRef.current)svRef.current.srcObject=s;setHasScr(true);s.getVideoTracks()[0].onended=()=>stopR();
+          let ms=null;
+          if(mic){try{ms=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true},video:false});msRef.current=ms;}catch(e){}}
+          if(cam){try{const c=await navigator.mediaDevices.getUserMedia({video:true,audio:false});csRef.current=c;if(cvRef.current)cvRef.current.srcObject=c;}catch(e){}}
+          await cd();beginR(s,ms);
+        }catch(e){toast('画面共有がキャンセルされました');}
       };
-
-      const toast = (msg) => {
-        setToastMsg(msg);
-        setShowToast(true);
-        setTimeout(() => setShowToast(false), 3000);
+      const cd=()=>new Promise(r=>{setShowCD(true);let c=3;setCdNum(c);const iv=setInterval(()=>{c--;if(c===0){clearInterval(iv);setShowCD(false);r();}else setCdNum(c);},1000);});
+      const beginR=(ss,ms)=>{
+        chRef.current=[];const vt=ss.getVideoTracks()[0];let at=[];
+        const sa=ss.getAudioTracks(),hs=sa.length>0,hm=ms&&ms.getAudioTracks().length>0;
+        if(hs||hm){try{const ctx=new AudioContext(),dst=ctx.createMediaStreamDestination();if(hs)ctx.createMediaStreamSource(new MediaStream([sa[0]])).connect(dst);if(hm){const g=ctx.createGain();g.gain.value=1.5;ctx.createMediaStreamSource(ms).connect(g);g.connect(dst);}at=dst.stream.getAudioTracks();}catch(e){at=hs?[...sa]:hm?ms.getAudioTracks():[];}}
+        const cm=new MediaStream([vt,...at]);const mt=['video/webm;codecs=vp9,opus','video/webm;codecs=vp9','video/webm'].find(m=>MediaRecorder.isTypeSupported(m))||'video/webm';
+        const r=new MediaRecorder(cm,{mimeType:mt});r.ondataavailable=e=>{if(e.data.size>0)chRef.current.push(e.data);};
+        r.onstop=async()=>{const b=new Blob(chRef.current,{type:'video/webm'});if(msRef.current){msRef.current.getTracks().forEach(t=>t.stop());msRef.current=null;}await saveR(b);cleanup();};
+        r.start(100);mrRef.current=r;setIsRec(true);setIsPaus(false);stRef.current=Date.now();ptRef.current=0;
+        tmRef.current=setInterval(()=>setElapsed(Math.floor((Date.now()-stRef.current-ptRef.current)/1000)),200);
       };
+      const pauseR=()=>{if(mrRef.current?.state==='recording'){mrRef.current.pause();setIsPaus(true);ptRef.current-=Date.now();}};
+      const resumeR=()=>{if(mrRef.current?.state==='paused'){mrRef.current.resume();setIsPaus(false);ptRef.current+=Date.now();}};
+      const stopR=()=>{if(mrRef.current&&mrRef.current.state!=='inactive')mrRef.current.stop();if(tmRef.current)clearInterval(tmRef.current);setIsRec(false);setIsPaus(false);setElapsed(0);setHasScr(false);};
+      const cleanup=()=>{[ssRef,csRef,msRef].forEach(r=>{if(r.current){r.current.getTracks().forEach(t=>t.stop());r.current=null;}});if(svRef.current)svRef.current.srcObject=null;if(cvRef.current)cvRef.current.srcObject=null;};
+      const saveR=async b=>{const id='rec_'+Date.now();await dbPut({id,title:`録画 ${new Date().toLocaleString('ja-JP')}`,blob:await b.arrayBuffer(),mimeType:'video/webm',size:b.size,duration:elapsed,createdAt:Date.now(),shareUrl:null});await load();toast('✅ 録画を保存しました！');setTab('library');};
 
-      // ---- Recording ----
-      const startScreenCapture = async () => {
-        try {
-          // 画面キャプチャ（システム音声含む）
-          const stream = await navigator.mediaDevices.getDisplayMedia({
-            video: { cursor: 'always', frameRate: 30 },
-            audio: {
-              echoCancellation: true,
-              noiseSuppression: true,
-              sampleRate: 44100
-            }
-          });
-          screenStreamRef.current = stream;
-          if (screenVideoRef.current) screenVideoRef.current.srcObject = stream;
-          setHasScreenStream(true);
-          stream.getVideoTracks()[0].onended = () => stopRecording();
-
-          // マイク音声を取得（includeAudioがONの場合）
-          let micStream = null;
-          if (includeAudio) {
-            try {
-              micStream = await navigator.mediaDevices.getUserMedia({
-                audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
-                video: false
-              });
-            } catch(e) { console.log('Mic not available, continuing without mic'); }
-          }
-
-          // カメラ映像を取得
-          if (showCamera) {
-            try {
-              const camStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-              cameraStreamRef.current = camStream;
-              if (cameraVideoRef.current) cameraVideoRef.current.srcObject = camStream;
-            } catch(e) { console.log('Camera not available'); }
-          }
-
-          await runCountdown();
-          beginRecording(stream, micStream);
-        } catch(e) {
-          console.error(e);
-          toast('画面共有がキャンセルされました');
-        }
+      const tSel=id=>setSel(p=>{const n=new Set(p);n.has(id)?n.delete(id):n.add(id);return n;});
+      const selAll=()=>setSel(p=>p.size===recs.length?new Set():new Set(recs.map(r=>r.id)));
+      const bulkDel=async()=>{if(!confirm(`${sel.size}件の録画を削除しますか？`))return;for(const id of sel){const r=recs.find(x=>x.id===id);if(r?.shareUrl)await fbDel(r.shareUrl);await dbDel(id);}setSel(new Set());await load();toast(`🗑️ ${sel.size}件を削除しました`);};
+      const hDel=async id=>{if(!confirm('この録画を削除しますか？'))return;const r=recs.find(x=>x.id===id);if(r?.shareUrl)await fbDel(r.shareUrl);await dbDel(id);await load();toast('削除しました');};
+      const hDL=r=>{const b=new Blob([r.blob],{type:r.mimeType});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=`${r.title}.webm`;a.click();URL.revokeObjectURL(u);toast('💾 ダウンロード開始');};
+      const hShare=async r=>{
+        if(r.shareUrl){const u=`${location.origin}${location.pathname}?view=${encodeURIComponent(r.shareUrl)}&title=${encodeURIComponent(r.title)}`;await navigator.clipboard.writeText(u);toast('🔗 リンクをコピーしました！');return;}
+        if(!fbOk){setShowFB(true);toast('⚠️ Firebase設定が必要です');return;}
+        try{setUpIds(p=>({...p,[r.id]:0}));const b=new Blob([r.blob],{type:r.mimeType});const url=await fbUp(b,`${r.id}_${Date.now()}.webm`,p=>setUpIds(prev=>({...prev,[r.id]:p})));await dbUpd(r.id,{shareUrl:url});await load();setUpIds(p=>{const n={...p};delete n[r.id];return n;});const u=`${location.origin}${location.pathname}?view=${encodeURIComponent(url)}&title=${encodeURIComponent(r.title)}`;await navigator.clipboard.writeText(u);toast('🔗 アップロード完了！リンクをコピーしました');}
+        catch(e){setUpIds(p=>{const n={...p};delete n[r.id];return n;});toast('❌ アップロード失敗');}
       };
+      const hTitle=async(id,t)=>{await dbUpd(id,{title:t});await load();};
+      const sFB=c=>{saveFBC(c);const ok=initFB(c);setFbOk(ok);setShowFB(false);toast(ok?'✅ Firebase接続成功！':'❌ 接続失敗');};
 
-      const runCountdown = () => new Promise((resolve) => {
-        setShowCountdown(true);
-        let count = 3;
-        setCountdownNum(count);
-        const interval = setInterval(() => {
-          count--;
-          if (count === 0) { clearInterval(interval); setShowCountdown(false); resolve(); }
-          else setCountdownNum(count);
-        }, 1000);
-      });
-
-      const beginRecording = (screenStream, micStream) => {
-        chunksRef.current = [];
-
-        // 音声トラックをミックス
-        const videoTrack = screenStream.getVideoTracks()[0];
-        let audioTracks = [];
-
-        const screenAudioTracks = screenStream.getAudioTracks();
-        const hasScreenAudio = screenAudioTracks.length > 0;
-        const hasMicAudio = micStream && micStream.getAudioTracks().length > 0;
-
-        if (hasScreenAudio || hasMicAudio) {
-          try {
-            const audioContext = new AudioContext();
-            const destination = audioContext.createMediaStreamDestination();
-
-            if (hasScreenAudio) {
-              const screenAudioSource = audioContext.createMediaStreamSource(
-                new MediaStream([screenAudioTracks[0]])
-              );
-              screenAudioSource.connect(destination);
-            }
-
-            if (hasMicAudio) {
-              const micSource = audioContext.createMediaStreamSource(micStream);
-              // マイクの音量を少し上げる
-              const micGain = audioContext.createGain();
-              micGain.gain.value = 1.5;
-              micSource.connect(micGain);
-              micGain.connect(destination);
-            }
-
-            audioTracks = destination.stream.getAudioTracks();
-          } catch (e) {
-            console.error('Audio mixing failed, falling back', e);
-            // フォールバック: ミックスできなければ利用可能な音声をそのまま使う
-            if (hasScreenAudio) audioTracks = screenAudioTracks;
-            else if (hasMicAudio) audioTracks = micStream.getAudioTracks();
-          }
-        }
-
-        const combinedStream = new MediaStream([videoTrack, ...audioTracks]);
-        const recorder = new MediaRecorder(combinedStream, {
-          mimeType: MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')
-            ? 'video/webm;codecs=vp9,opus'
-            : MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
-              ? 'video/webm;codecs=vp9'
-              : 'video/webm'
-        });
-        recorder.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
-        recorder.onstop = async () => {
-          const blob = new Blob(chunksRef.current, { type: 'video/webm' });
-          // マイクストリームも停止
-          if (micStream) micStream.getTracks().forEach(t => t.stop());
-          await saveNewRecording(blob);
-          cleanupStreams();
-        };
-        recorder.start(100);
-        mediaRecorderRef.current = recorder;
-        setIsRecording(true);
-        setIsPaused(false);
-        startTimeRef.current = Date.now();
-        pausedTimeRef.current = 0;
-        timerRef.current = setInterval(() => {
-          setElapsed(Math.floor((Date.now() - startTimeRef.current - pausedTimeRef.current) / 1000));
-        }, 200);
-      };
-
-      const pauseRecording = () => {
-        if (mediaRecorderRef.current?.state === 'recording') {
-          mediaRecorderRef.current.pause();
-          setIsPaused(true);
-          pausedTimeRef.current -= Date.now();
-        }
-      };
-      const resumeRecording = () => {
-        if (mediaRecorderRef.current?.state === 'paused') {
-          mediaRecorderRef.current.resume();
-          setIsPaused(false);
-          pausedTimeRef.current += Date.now();
-        }
-      };
-      const stopRecording = () => {
-        if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') mediaRecorderRef.current.stop();
-        if (timerRef.current) clearInterval(timerRef.current);
-        setIsRecording(false); setIsPaused(false); setElapsed(0); setHasScreenStream(false);
-      };
-      const cleanupStreams = () => {
-        [screenStreamRef, cameraStreamRef].forEach(ref => {
-          if (ref.current) { ref.current.getTracks().forEach(t => t.stop()); ref.current = null; }
-        });
-        if (screenVideoRef.current) screenVideoRef.current.srcObject = null;
-        if (cameraVideoRef.current) cameraVideoRef.current.srcObject = null;
-      };
-
-      const saveNewRecording = async (blob) => {
-        const id = 'rec_' + Date.now();
-        const arrayBuffer = await blob.arrayBuffer();
-        const recording = {
-          id, title: `録画 ${new Date().toLocaleString('ja-JP')}`,
-          blob: arrayBuffer, mimeType: 'video/webm',
-          size: blob.size, duration: elapsed,
-          createdAt: Date.now(), shareUrl: null
-        };
-        await saveRecording(recording);
-        await loadRecordings();
-        toast('✅ 録画を保存しました！');
-        setTab('library');
-      };
-
-      // ---- Selection & Bulk Delete ----
-      const toggleSelect = (id) => {
-        setSelectedIds(prev => {
-          const next = new Set(prev);
-          next.has(id) ? next.delete(id) : next.add(id);
-          return next;
-        });
-      };
-      const selectAll = () => {
-        if (selectedIds.size === recordings.length) setSelectedIds(new Set());
-        else setSelectedIds(new Set(recordings.map(r => r.id)));
-      };
-      const bulkDelete = async () => {
-        if (!confirm(`${selectedIds.size}件の録画を削除しますか？`)) return;
-        for (const id of selectedIds) {
-          const rec = recordings.find(r => r.id === id);
-          if (rec?.shareUrl) await deleteFromFirebase(rec.shareUrl);
-          await deleteRecording(id);
-        }
-        setSelectedIds(new Set());
-        await loadRecordings();
-        toast(`🗑️ ${selectedIds.size}件を削除しました`);
-      };
-
-      const handleDelete = async (id) => {
-        if (!confirm('この録画を削除しますか？')) return;
-        const rec = recordings.find(r => r.id === id);
-        if (rec?.shareUrl) await deleteFromFirebase(rec.shareUrl);
-        await deleteRecording(id);
-        await loadRecordings();
-        toast('録画を削除しました');
-      };
-
-      const handleDownload = (rec) => {
-        const blob = new Blob([rec.blob], { type: rec.mimeType });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url; a.download = `${rec.title}.webm`; a.click();
-        URL.revokeObjectURL(url);
-        toast('💾 ダウンロード開始');
-      };
-
-      // ---- Share (Firebase upload) ----
-      const handleShare = async (rec) => {
-        if (rec.shareUrl) {
-          // Already shared, copy link
-          const viewUrl = `${window.location.origin}${window.location.pathname}?view=${encodeURIComponent(rec.shareUrl)}`;
-          await navigator.clipboard.writeText(viewUrl);
-          toast('🔗 共有リンクをコピーしました！');
-          return;
-        }
-        if (!firebaseReady) {
-          setShowFirebaseConfig(true);
-          toast('⚠️ Firebase設定が必要です');
-          return;
-        }
-        try {
-          setUploadingIds(prev => ({ ...prev, [rec.id]: 0 }));
-          const blob = new Blob([rec.blob], { type: rec.mimeType });
-          const filename = `${rec.id}_${Date.now()}.webm`;
-          const url = await uploadToFirebase(blob, filename, (p) => {
-            setUploadingIds(prev => ({ ...prev, [rec.id]: p }));
-          });
-          await updateRecordingField(rec.id, { shareUrl: url });
-          await loadRecordings();
-          setUploadingIds(prev => { const n = {...prev}; delete n[rec.id]; return n; });
-
-          const viewUrl = `${window.location.origin}${window.location.pathname}?view=${encodeURIComponent(url)}`;
-          await navigator.clipboard.writeText(viewUrl);
-          toast('🔗 アップロード完了！共有リンクをコピーしました');
-        } catch (e) {
-          console.error(e);
-          setUploadingIds(prev => { const n = {...prev}; delete n[rec.id]; return n; });
-          toast('❌ アップロードに失敗しました');
-        }
-      };
-
-      const handleTitleChange = async (id, newTitle) => {
-        await updateRecordingField(id, { title: newTitle });
-        await loadRecordings();
-      };
-
-      // ---- Firebase Config Save ----
-      const handleSaveFirebaseConfig = (config) => {
-        saveFirebaseConfig(config);
-        const ok = initFirebase(config);
-        setFirebaseReady(ok);
-        setShowFirebaseConfig(false);
-        if (ok) toast('✅ Firebase接続成功！');
-        else toast('❌ Firebase接続に失敗しました');
-      };
-
-      return (
+      return(
         <div className="app">
           <header className="header">
-            <div className="logo">
-              <div className="logo-icon">⏺</div>
-              <span>ScreenCast</span>
-            </div>
+            <div className="logo"><div className="logo-icon">⏺</div><span>ScreenCast</span></div>
             <div className="nav-tabs">
               <button className={`nav-tab ${tab==='record'?'active':''}`} onClick={()=>setTab('record')}>🎬 録画</button>
-              <button className={`nav-tab ${tab==='library'?'active':''}`} onClick={()=>setTab('library')}>📁 ライブラリ ({recordings.length})</button>
-              <button className={`nav-tab ${tab==='deploy'?'active':''}`} onClick={()=>setTab('deploy')}>🚀 デプロイ</button>
+              <button className={`nav-tab ${tab==='library'?'active':''}`} onClick={()=>setTab('library')}>📁 ライブラリ ({recs.length})</button>
             </div>
           </header>
-
           <main className="main">
-            {tab === 'record' && (
-              <div className="record-view">
-                <div className="preview-container">
-                  {hasScreenStream ? (
-                    <video ref={screenVideoRef} autoPlay muted playsInline />
-                  ) : (
-                    <div className="placeholder">
-                      <div className="placeholder-icon">🖥️</div>
-                      <div className="placeholder-text">画面共有を開始してください</div>
-                    </div>
-                  )}
-                  {showCamera && hasScreenStream && (
-                    <div className="camera-bubble">
-                      <video ref={cameraVideoRef} autoPlay muted playsInline />
-                    </div>
-                  )}
-                  <div className={`recording-indicator ${isRecording && !isPaused ? 'active' : ''}`}>
-                    <div className="rec-dot"></div>
-                    <span>REC</span>
-                    <span className="timer">{formatTime(elapsed)}</span>
-                  </div>
-                  {showCountdown && (
-                    <div className="countdown-overlay">
-                      <div className="countdown-number" key={countdownNum}>{countdownNum}</div>
-                    </div>
-                  )}
-                </div>
-                <div className="settings-row">
-                  <div className="setting-card">
-                    <span className="setting-label">📷 カメラ</span>
-                    <div className={`toggle ${showCamera?'active':''}`} onClick={()=>setShowCamera(!showCamera)} />
-                  </div>
-                  <div className="setting-card">
-                    <span className="setting-label">🔊 音声</span>
-                    <div className={`toggle ${includeAudio?'active':''}`} onClick={()=>setIncludeAudio(!includeAudio)} />
-                  </div>
-                </div>
-                <div className="controls">
-                  {!isRecording ? (
-                    <button className="btn btn-primary" onClick={startScreenCapture}>
-                      <span className="btn-icon">⏺</span>録画を開始
-                    </button>
-                  ) : (
-                    <>
-                      {!isPaused ? (
-                        <button className="btn btn-pause" onClick={pauseRecording}><span className="btn-icon">⏸</span>一時停止</button>
-                      ) : (
-                        <button className="btn btn-secondary" onClick={resumeRecording}><span className="btn-icon">▶</span>再開</button>
-                      )}
-                      <button className="btn btn-stop" onClick={stopRecording}><span className="btn-icon">⏹</span>停止して保存</button>
-                    </>
-                  )}
-                </div>
+            {tab==='record'&&<div className="record-view">
+              <div className="preview-container">
+                {hasScr?<video ref={svRef} autoPlay muted playsInline/>:<div className="placeholder"><div className="placeholder-icon">🖥️</div><div className="placeholder-text">画面共有を開始してください</div></div>}
+                {cam&&hasScr&&<div className="camera-bubble"><video ref={cvRef} autoPlay muted playsInline/></div>}
+                <div className={`recording-indicator ${isRec&&!isPaus?'active':''}`}><div className="rec-dot"/><span>REC</span><span className="timer">{fmt(elapsed)}</span></div>
+                {showCD&&<div className="countdown-overlay"><div className="countdown-number" key={cdNum}>{cdNum}</div></div>}
               </div>
-            )}
-
-            {tab === 'library' && (
-              <div className="library-view">
-                <div className="library-header">
-                  <div>
-                    <div className="library-title">ライブラリ</div>
-                    <div className="library-count">{recordings.length} 件の録画</div>
-                  </div>
-                  <div className="library-actions">
-                    <button className="btn btn-secondary btn-sm" onClick={() => setShowFirebaseConfig(true)}>
-                      {firebaseReady ? '🟢' : '⚪'} Firebase設定
-                    </button>
-                  </div>
-                </div>
-
-                {selectedIds.size > 0 && (
-                  <div className="select-bar">
-                    <input type="checkbox" checked={selectedIds.size === recordings.length} onChange={selectAll}
-                      style={{ width: 18, height: 18, accentColor: 'var(--accent)', cursor: 'pointer' }} />
-                    <span className="select-bar-count">{selectedIds.size}件を選択中</span>
-                    <div className="select-bar-actions">
-                      <button className="btn btn-danger btn-sm" onClick={bulkDelete}>🗑️ まとめて削除</button>
-                      <button className="btn btn-secondary btn-sm" onClick={() => setSelectedIds(new Set())}>キャンセル</button>
-                    </div>
-                  </div>
-                )}
-
-                {recordings.length === 0 ? (
-                  <div className="empty-state">
-                    <div className="empty-icon">🎥</div>
-                    <div className="empty-title">録画がありません</div>
-                    <div className="empty-text">「録画」タブから画面録画を始めましょう</div>
-                  </div>
-                ) : (
-                  <div className="recordings-grid">
-                    {recordings.map(rec => (
-                      <RecordingCard key={rec.id} rec={rec}
-                        selected={selectedIds.has(rec.id)}
-                        onToggleSelect={() => toggleSelect(rec.id)}
-                        onPlay={() => setPlayingRecording(rec)}
-                        onDownload={() => handleDownload(rec)}
-                        onDelete={() => handleDelete(rec.id)}
-                        onShare={() => handleShare(rec)}
-                        onTitleChange={handleTitleChange}
-                        uploadProgress={uploadingIds[rec.id]}
-                        firebaseReady={firebaseReady}
-                      />
-                    ))}
-                  </div>
-                )}
+              <div className="settings-row">
+                <div className="setting-card"><span className="setting-label">📷 カメラ</span><div className={`toggle ${cam?'active':''}`} onClick={()=>setCam(!cam)}/></div>
+                <div className="setting-card"><span className="setting-label">🎙️ マイク</span><div className={`toggle ${mic?'active':''}`} onClick={()=>setMic(!mic)}/></div>
               </div>
-            )}
-
-            {tab === 'deploy' && <DeployGuide />}
+              <div className="controls">
+                {!isRec?<button className="btn btn-primary" onClick={startCap}><span className="btn-icon">⏺</span>録画を開始</button>:<>
+                  {!isPaus?<button className="btn btn-pause" onClick={pauseR}><span className="btn-icon">⏸</span>一時停止</button>:<button className="btn btn-secondary" onClick={resumeR}><span className="btn-icon">▶</span>再開</button>}
+                  <button className="btn btn-stop" onClick={stopR}><span className="btn-icon">⏹</span>停止して保存</button>
+                </>}
+              </div>
+            </div>}
+            {tab==='library'&&<div>
+              <div className="library-header">
+                <div><div className="library-title">ライブラリ</div><div className="library-count">{recs.length} 件の録画</div></div>
+                <div className="library-actions"><button className="btn btn-secondary btn-sm" onClick={()=>setShowFB(true)}>{fbOk?'🟢':'⚪'} Firebase設定</button></div>
+              </div>
+              {sel.size>0&&<div className="select-bar">
+                <input type="checkbox" checked={sel.size===recs.length} onChange={selAll} style={{width:18,height:18,accentColor:'var(--accent)',cursor:'pointer'}}/>
+                <span className="select-bar-count">{sel.size}件を選択中</span>
+                <div className="select-bar-actions"><button className="btn btn-danger btn-sm" onClick={bulkDel}>🗑️ まとめて削除</button><button className="btn btn-secondary btn-sm" onClick={()=>setSel(new Set())}>キャンセル</button></div>
+              </div>}
+              {recs.length===0?<div className="empty-state"><div className="empty-icon">🎥</div><div className="empty-title">録画がありません</div><div className="empty-text">「録画」タブから画面録画を始めましょう</div></div>:
+              <div className="recordings-grid">{recs.map(r=><Card key={r.id} r={r} sel={sel.has(r.id)} onTog={()=>tSel(r.id)} onPlay={()=>setPlaying(r)} onDL={()=>hDL(r)} onDel={()=>hDel(r.id)} onShare={()=>hShare(r)} onTitle={hTitle} up={upIds[r.id]}/>)}</div>}
+            </div>}
           </main>
-
-          {playingRecording && <PlayerModal rec={playingRecording} onClose={() => setPlayingRecording(null)} />}
-          {showFirebaseConfig && <FirebaseConfigModal onSave={handleSaveFirebaseConfig} onClose={() => setShowFirebaseConfig(false)} currentConfig={getFirebaseConfig()} />}
-          <Toast message={toastMsg} show={showToast} />
+          {playing&&<Player r={playing} onClose={()=>setPlaying(null)}/>}
+          {showFB&&<FBConfig onSave={sFB} onClose={()=>setShowFB(false)} cur={getFBC()}/>}
+          <Toast message={tMsg} show={tShow}/>
         </div>
       );
     }
 
-    // ============ Recording Card ============
-    function RecordingCard({ rec, selected, onToggleSelect, onPlay, onDownload, onDelete, onShare, onTitleChange, uploadProgress, firebaseReady }) {
-      const videoRef = useRef(null);
-      const [title, setTitle] = useState(rec.title);
-
-      useEffect(() => {
-        if (videoRef.current) {
-          const blob = new Blob([rec.blob], { type: rec.mimeType });
-          videoRef.current.src = URL.createObjectURL(blob);
-          videoRef.current.currentTime = 1;
-        }
-      }, [rec]);
-
-      const handleBlur = () => { if (title !== rec.title) onTitleChange(rec.id, title); };
-      const isUploading = uploadProgress !== undefined;
-
-      const copyShareUrl = async () => {
-        const viewUrl = `${window.location.origin}${window.location.pathname}?view=${encodeURIComponent(rec.shareUrl)}`;
-        await navigator.clipboard.writeText(viewUrl);
-      };
-
-      return (
-        <div className={`recording-card ${selected ? 'selected' : ''}`}>
-          <input type="checkbox" className="card-checkbox" checked={selected} onChange={onToggleSelect} />
-          <div className="card-thumbnail" onClick={onPlay}>
-            <video ref={videoRef} muted preload="metadata" />
-            <div className="card-duration">{formatTime(rec.duration)}</div>
-            <div className="card-play">▶</div>
-          </div>
+    function Card({r,sel,onTog,onPlay,onDL,onDel,onShare,onTitle,up}){
+      const vr=useRef(null);const[t,setT]=useState(r.title);
+      useEffect(()=>{if(vr.current){vr.current.src=URL.createObjectURL(new Blob([r.blob],{type:r.mimeType}));vr.current.currentTime=1;}},[r]);
+      const isUp=up!==undefined;
+      return(
+        <div className={`recording-card ${sel?'selected':''}`}>
+          <input type="checkbox" className="card-checkbox" checked={sel} onChange={onTog}/>
+          <div className="card-thumbnail" onClick={onPlay}><video ref={vr} muted preload="metadata"/><div className="card-duration">{fmt(r.duration)}</div><div className="card-play">▶</div></div>
           <div className="card-info">
-            <div className="card-title">
-              <input value={title} onChange={e => setTitle(e.target.value)} onBlur={handleBlur} onKeyDown={e => e.key==='Enter' && e.target.blur()} />
-            </div>
-            <div className="card-meta">
-              <span>{formatDate(rec.createdAt)}</span>
-              <span>{formatFileSize(rec.size)}</span>
-            </div>
-            {rec.shareUrl && (
-              <div className="share-status">
-                <span>🔗 共有中</span>
-                <span className="share-url" onClick={copyShareUrl} title="クリックでコピー">
-                  {rec.shareUrl.substring(0, 50)}...
-                </span>
-              </div>
-            )}
-            {isUploading && (
-              <div className="uploading-bar">
-                <div className="uploading-bar-fill" style={{ width: `${Math.round(uploadProgress * 100)}%` }} />
-              </div>
-            )}
+            <div className="card-title"><input value={t} onChange={e=>setT(e.target.value)} onBlur={()=>{if(t!==r.title)onTitle(r.id,t);}} onKeyDown={e=>e.key==='Enter'&&e.target.blur()}/></div>
+            <div className="card-meta"><span>{fmtD(r.createdAt)}</span><span>{fmtS(r.size)}</span></div>
+            {r.shareUrl&&<div className="share-status"><span>🔗 共有中</span><span className="share-url" onClick={()=>{navigator.clipboard.writeText(`${location.origin}${location.pathname}?view=${encodeURIComponent(r.shareUrl)}&title=${encodeURIComponent(r.title)}`);}}>📋 リンクコピー</span></div>}
+            {isUp&&<div className="uploading-bar"><div className="uploading-bar-fill" style={{width:`${Math.round(up*100)}%`}}/></div>}
           </div>
           <div className="card-actions">
-            <button className={`card-btn share`} onClick={onShare} disabled={isUploading}>
-              {isUploading ? `⏳ ${Math.round(uploadProgress*100)}%` : rec.shareUrl ? '🔗 リンクコピー' : '🔗 共有'}
-            </button>
-            <button className="card-btn" onClick={onDownload}>💾 DL</button>
-            <button className="card-btn danger" onClick={onDelete}>🗑️</button>
+            <button className="card-btn share" onClick={onShare} disabled={isUp}>{isUp?`⏳ ${Math.round(up*100)}%`:r.shareUrl?'🔗 リンクコピー':'🔗 共有'}</button>
+            <button className="card-btn" onClick={onDL}>💾 DL</button>
+            <button className="card-btn danger" onClick={onDel}>🗑️</button>
           </div>
         </div>
       );
     }
 
-    // ============ Player Modal ============
-    function PlayerModal({ rec, onClose }) {
-      const videoRef = useRef(null);
-      useEffect(() => {
-        if (videoRef.current) {
-          const blob = new Blob([rec.blob], { type: rec.mimeType });
-          videoRef.current.src = URL.createObjectURL(blob);
-          videoRef.current.play();
-        }
-        const onKey = (e) => { if (e.key === 'Escape') onClose(); };
-        window.addEventListener('keydown', onKey);
-        return () => window.removeEventListener('keydown', onKey);
-      }, [rec]);
-      return (
-        <div className="modal-overlay active" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+    function Player({r,onClose}){
+      const vr=useRef(null);const[spd,setSpd]=useState(1);
+      useEffect(()=>{if(vr.current){vr.current.src=URL.createObjectURL(new Blob([r.blob],{type:r.mimeType}));vr.current.play();}const k=e=>{if(e.key==='Escape')onClose();};window.addEventListener('keydown',k);return()=>window.removeEventListener('keydown',k);},[r]);
+      const cs=s=>{setSpd(s);if(vr.current)vr.current.playbackRate=s;};
+      return(
+        <div className="modal-overlay active" onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
           <button className="modal-close" onClick={onClose}>✕</button>
           <div className="modal">
-            <div className="modal-video"><video ref={videoRef} controls autoPlay /></div>
+            <div className="modal-video"><video ref={vr} controls autoPlay/></div>
             <div className="modal-controls">
-              <span style={{ fontWeight: 600 }}>{rec.title}</span>
-              <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>
-                {formatDate(rec.createdAt)} · {formatTime(rec.duration)} · {formatFileSize(rec.size)}
-              </span>
+              <span style={{fontWeight:600}}>{r.title}</span>
+              <div style={{display:'flex',gap:12,alignItems:'center',flexWrap:'wrap'}}>
+                <div className="speed-controls">{[0.5,0.75,1,1.25,1.5,2].map(s=><button key={s} className={`speed-btn ${spd===s?'active':''}`} onClick={()=>cs(s)}>{s}x</button>)}</div>
+                <span style={{color:'var(--text-muted)',fontSize:13}}>{fmtD(r.createdAt)} · {fmt(r.duration)} · {fmtS(r.size)}</span>
+              </div>
             </div>
           </div>
         </div>
       );
     }
 
-    // ============ Firebase Config Modal ============
-    function FirebaseConfigModal({ onSave, onClose, currentConfig }) {
-      const [apiKey, setApiKey] = useState(currentConfig?.apiKey || '');
-      const [authDomain, setAuthDomain] = useState(currentConfig?.authDomain || '');
-      const [projectId, setProjectId] = useState(currentConfig?.projectId || '');
-      const [storageBucket, setStorageBucket] = useState(currentConfig?.storageBucket || '');
-      const [appId, setAppId] = useState(currentConfig?.appId || '');
-
-      const handleSave = () => {
-        onSave({ apiKey, authDomain, projectId, storageBucket, appId });
-      };
-
-      return (
-        <div className="modal-overlay active" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+    function FBConfig({onSave,onClose,cur}){
+      const[ak,setAk]=useState(cur?.apiKey||'');const[ad,setAd]=useState(cur?.authDomain||'');const[pi,setPi]=useState(cur?.projectId||'');const[sb,setSb]=useState(cur?.storageBucket||'');const[ai,setAi]=useState(cur?.appId||'');
+      return(
+        <div className="modal-overlay active" onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
           <div className="config-modal">
             <div className="config-title">🔥 Firebase設定</div>
-            <div className="config-subtitle">URL共有機能にはFirebase Storageが必要です。以下の手順で設定してください。</div>
-
-            <div style={{ background: 'var(--bg-primary)', border: '1px solid var(--border)', borderRadius: 12, padding: 20, marginBottom: 24, fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.8 }}>
-              <strong style={{ color: 'var(--text-primary)' }}>初回セットアップ手順：</strong><br/>
-              1. <a href="https://console.firebase.google.com" target="_blank" style={{ color: 'var(--accent)' }}>Firebase Console</a> でプロジェクト作成<br/>
-              2. 「Storage」→「始める」→ テストモードで開始<br/>
-              3. 「プロジェクトの設定」→「全般」→ ウェブアプリを追加<br/>
-              4. 表示される設定値を下にペースト
+            <div className="config-subtitle">URL共有にはFirebase Storageが必要です</div>
+            <div className="info-box" style={{marginBottom:24}}>
+              <strong style={{color:'var(--text-primary)'}}>セットアップ手順：</strong><br/>
+              1. <a href="https://console.firebase.google.com" target="_blank" style={{color:'var(--accent)'}}>Firebase Console</a> → プロジェクト作成<br/>
+              2. Storage → 開始 → テストモード<br/>
+              3. プロジェクト設定 → ウェブアプリ追加 → 設定値を下にペースト<br/><br/>
+              <strong style={{color:'var(--warning)'}}>⚠️ 必須：CORS設定</strong>（共有リンクの動画再生に必要）<br/>
+              Firebase Console 右上の Cloud Shell アイコンをクリックして以下を実行：
+              <code className="code-inline">echo '[{"{"}"origin":["*"],"method":["GET"],"maxAgeSeconds":3600{"}"}]' &gt; cors.json</code>
+              <code className="code-inline">gsutil cors set cors.json gs://<span style={{color:'var(--warning)'}}>{sb||'あなたのstorageBucket名'}</span></code>
+              <br/>
+              <strong style={{color:'var(--text-primary)'}}>Storageルール（30日制限を解消）：</strong><br/>
+              Firebase Console → Storage → ルール に以下を貼り付けて「公開」：
+              <code className="code-inline" style={{whiteSpace:'pre'}}>{"rules_version = '2';\nservice firebase.storage {\n  match /b/{bucket}/o {\n    match /recordings/{allPaths=**} {\n      allow read: if true;\n      allow write: if request.resource.size < 500 * 1024 * 1024;\n    }\n  }\n}"}</code>
             </div>
-
-            <div className="config-field">
-              <label className="config-label">API Key</label>
-              <input className="config-input" value={apiKey} onChange={e=>setApiKey(e.target.value)} placeholder="AIzaSy..." />
-            </div>
-            <div className="config-field">
-              <label className="config-label">Auth Domain</label>
-              <input className="config-input" value={authDomain} onChange={e=>setAuthDomain(e.target.value)} placeholder="your-app.firebaseapp.com" />
-            </div>
-            <div className="config-field">
-              <label className="config-label">Project ID</label>
-              <input className="config-input" value={projectId} onChange={e=>setProjectId(e.target.value)} placeholder="your-project-id" />
-            </div>
-            <div className="config-field">
-              <label className="config-label">Storage Bucket</label>
-              <input className="config-input" value={storageBucket} onChange={e=>setStorageBucket(e.target.value)} placeholder="your-app.appspot.com" />
-              <div className="config-hint">⚠️ 最も重要な項目です。正確に入力してください。</div>
-            </div>
-            <div className="config-field">
-              <label className="config-label">App ID</label>
-              <input className="config-input" value={appId} onChange={e=>setAppId(e.target.value)} placeholder="1:123456:web:abc123" />
-            </div>
-
+            {[['API Key',ak,setAk,'AIzaSy...'],['Auth Domain',ad,setAd,'xxx.firebaseapp.com'],['Project ID',pi,setPi,'your-project-id'],['Storage Bucket',sb,setSb,'xxx.firebasestorage.app'],['App ID',ai,setAi,'1:123:web:abc']].map(([l,v,s,p])=>
+              <div className="config-field" key={l}><label className="config-label">{l}</label><input className="config-input" value={v} onChange={e=>s(e.target.value)} placeholder={p}/></div>
+            )}
             <div className="config-actions">
               <button className="btn btn-secondary btn-sm" onClick={onClose}>キャンセル</button>
-              <button className="btn btn-primary btn-sm" onClick={handleSave} disabled={!apiKey || !storageBucket}>保存して接続</button>
+              <button className="btn btn-primary btn-sm" onClick={()=>onSave({apiKey:ak,authDomain:ad,projectId:pi,storageBucket:sb,appId:ai})} disabled={!ak||!sb}>保存して接続</button>
             </div>
           </div>
         </div>
       );
     }
 
-    // ============ Deploy Guide ============
-    function DeployGuide() {
-      const copyCode = (text) => navigator.clipboard.writeText(text);
-      const steps = [
-        {
-          title: 'Vercelアカウントを作成',
-          content: <><p><a href="https://vercel.com" target="_blank" style={{color:'var(--accent)'}}>vercel.com</a> にアクセスし、GitHubアカウントでサインアップします。</p></>
-        },
-        {
-          title: 'GitHubリポジトリを作成',
-          content: <>
-            <p><a href="https://github.com/new" target="_blank" style={{color:'var(--accent)'}}>github.com/new</a> でリポジトリを作成し、このindex.htmlをアップロードします。</p>
-            <div className="code-block">
-              <button className="copy-btn" onClick={()=>copyCode('git clone https://github.com/YOUR_USER/screencast-app.git\ncd screencast-app\ngit add index.html\ngit commit -m "Initial commit"\ngit push origin main')}>コピー</button>
-              git clone https://github.com/YOUR_USER/screencast-app.git<br/>cd screencast-app<br/>git add index.html<br/>git commit -m "Initial commit"<br/>git push origin main
-            </div>
-          </>
-        },
-        {
-          title: 'Vercelにデプロイ',
-          content: <>
-            <p><a href="https://vercel.com/new" target="_blank" style={{color:'var(--accent)'}}>vercel.com/new</a> でGitHubリポジトリを選択。</p>
-            <div className="code-block">
-              Framework Preset: Other<br/>Build Command: (空欄)<br/>Output Directory: ./<br/>→ 「Deploy」
-            </div>
-          </>
-        },
-        {
-          title: 'Firebase Storageをセットアップ（URL共有用）',
-          content: <>
-            <p>録画をURL共有するには <a href="https://console.firebase.google.com" target="_blank" style={{color:'var(--accent)'}}>Firebase</a> が必要です。</p>
-            <div className="code-block">
-              1. Firebase Console → プロジェクト作成（無料）<br/>
-              2. Storage → 始める → テストモードで開始<br/>
-              3. プロジェクトの設定 → ウェブアプリを追加<br/>
-              4. 表示された設定値をアプリの「Firebase設定」に入力
-            </div>
-            <p style={{marginTop: 8}}>⚠️ テストモードは30日間有効です。本番運用時はセキュリティルールを設定してください。</p>
-            <div className="code-block">
-              <button className="copy-btn" onClick={()=>copyCode('rules_version = \'2\';\nservice firebase.storage {\n  match /b/{bucket}/o {\n    match /recordings/{allPaths=**} {\n      allow read: if true;\n      allow write: if request.resource.size < 500 * 1024 * 1024;\n    }\n  }\n}')}>コピー</button>
-              // Storage Rules（本番用推奨設定）<br/>
-              rules_version = '2';<br/>
-              service firebase.storage {'{'}<br/>
-              &nbsp;&nbsp;match /b/{'{bucket}'}/o {'{'}<br/>
-              &nbsp;&nbsp;&nbsp;&nbsp;match /recordings/{'{allPaths=**}'} {'{'}<br/>
-              &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;allow read: if true;<br/>
-              &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;allow write: if request.resource.size {'<'} 500 * 1024 * 1024;<br/>
-              &nbsp;&nbsp;&nbsp;&nbsp;{'}'}<br/>
-              &nbsp;&nbsp;{'}'}<br/>
-              {'}'}
-            </div>
-          </>
-        },
-        {
-          title: '代替: Netlify Drop（最速デプロイ）',
-          content: <>
-            <p><a href="https://app.netlify.com/drop" target="_blank" style={{color:'var(--accent)'}}>Netlify Drop</a> にindex.htmlをドラッグ&ドロップするだけ。GitHubアカウント不要です！</p>
-          </>
-        }
-      ];
-
-      return (
-        <div className="deploy-view">
-          <div className="deploy-title">🚀 デプロイ & セットアップガイド</div>
-          <div className="deploy-subtitle">アプリの公開とURL共有機能のセットアップ手順</div>
-          {steps.map((step, i) => (
-            <div className="deploy-step" key={i}>
-              <div className="step-header">
-                <div className="step-number">{i+1}</div>
-                <div className="step-title">{step.title}</div>
-              </div>
-              <div className="step-content">{step.content}</div>
-            </div>
-          ))}
-        </div>
-      );
-    }
-
-    ReactDOM.createRoot(document.getElementById('app')).render(<App />);
+    ReactDOM.createRoot(document.getElementById('app')).render(<App/>);
   </script>
 </body>
 </html>
