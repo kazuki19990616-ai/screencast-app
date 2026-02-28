@@ -18,6 +18,12 @@
     .nav-tab{padding:8px 20px;border-radius:8px;border:none;background:transparent;color:var(--text-secondary);font-family:inherit;font-size:14px;font-weight:500;cursor:pointer;transition:var(--transition)}
     .nav-tab.active{background:var(--bg-card);color:var(--text-primary);box-shadow:0 2px 8px rgba(0,0,0,0.3)}
     .nav-tab:hover:not(.active){color:var(--text-primary)}
+    .header-right{display:flex;align-items:center;gap:12px}
+    .user-info{display:flex;align-items:center;gap:8px;padding:6px 12px;background:var(--bg-card);border-radius:20px;border:1px solid var(--border);font-size:13px}
+    .user-avatar{width:28px;height:28px;border-radius:50%;object-fit:cover}
+    .user-name{color:var(--text-secondary);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .btn-logout{padding:6px 12px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text-muted);font-family:inherit;font-size:12px;cursor:pointer;transition:var(--transition)}
+    .btn-logout:hover{background:var(--bg-hover);color:var(--text-primary)}
     .main{max-width:1200px;margin:0 auto;padding:40px 32px}
     .record-view{display:flex;flex-direction:column;align-items:center;gap:32px}
     .preview-container{position:relative;width:100%;max-width:900px;aspect-ratio:16/9;background:var(--bg-secondary);border-radius:var(--radius-lg);overflow:hidden;border:1px solid var(--border);box-shadow:0 20px 60px rgba(0,0,0,0.5)}
@@ -56,7 +62,6 @@
     .library-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:32px;flex-wrap:wrap;gap:16px}
     .library-title{font-size:28px;font-weight:700;letter-spacing:-0.5px}
     .library-count{color:var(--text-secondary);font-size:14px;margin-top:4px}
-    .library-actions{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
     .select-bar{display:flex;align-items:center;gap:16px;padding:12px 20px;margin-bottom:20px;background:var(--bg-card);border:1px solid var(--accent);border-radius:var(--radius);animation:slideDown 0.25s ease;flex-wrap:wrap}
     @keyframes slideDown{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
     .select-bar-count{font-size:14px;font-weight:600;color:var(--accent)}
@@ -68,10 +73,9 @@
     .card-checkbox{position:absolute;top:12px;left:12px;z-index:10;width:24px;height:24px;appearance:none;-webkit-appearance:none;background:rgba(0,0,0,0.6);border:2px solid rgba(255,255,255,0.3);border-radius:6px;cursor:pointer;transition:var(--transition);backdrop-filter:blur(8px)}
     .card-checkbox:checked{background:var(--accent);border-color:var(--accent)}
     .card-checkbox:checked::after{content:'✓';display:flex;align-items:center;justify-content:center;color:white;font-size:14px;font-weight:700;width:100%;height:100%}
-    .card-checkbox:hover{border-color:var(--accent)}
     .card-thumbnail{position:relative;aspect-ratio:16/9;background:var(--bg-secondary);overflow:hidden;cursor:pointer}
     .card-thumbnail video{width:100%;height:100%;object-fit:cover}
-    .card-duration{position:absolute;bottom:8px;right:8px;padding:4px 10px;background:rgba(0,0,0,0.8);border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:500}
+    .card-duration{position:absolute;bottom:8px;right:8px;padding:4px 10px;background:rgba(0,0,0,0.8);border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:12px}
     .card-play{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:56px;height:56px;background:rgba(255,77,106,0.9);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;opacity:0;transition:var(--transition);box-shadow:0 4px 20px var(--accent-glow)}
     .recording-card:hover .card-play{opacity:1}
     .card-info{padding:16px}
@@ -118,18 +122,54 @@
     @keyframes cPulse{0%{transform:scale(0.5);opacity:0}50%{transform:scale(1.2);opacity:1}100%{transform:scale(1);opacity:1}}
     .info-box{background:var(--bg-primary);border:1px solid var(--border);border-radius:12px;padding:16px 20px;font-size:13px;color:var(--text-secondary);line-height:1.8}
     .code-inline{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--success);background:var(--bg-secondary);padding:8px 12px;border-radius:8px;display:block;margin:8px 0;word-break:break-all}
-    @media(max-width:768px){.header{padding:12px 16px}.main{padding:20px 16px}.logo span{display:none}.recordings-grid{grid-template-columns:1fr}.settings-row{flex-direction:column;align-items:center}.camera-bubble{width:100px;height:100px}.library-header{flex-direction:column}}
+    .login-page{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:80vh;gap:32px;text-align:center}
+    .login-title{font-size:32px;font-weight:700;letter-spacing:-1px}
+    .login-subtitle{color:var(--text-secondary);font-size:16px;max-width:400px;line-height:1.6}
+    .btn-google{display:flex;align-items:center;gap:12px;padding:14px 32px;background:white;color:#333;border:none;border-radius:var(--radius);font-family:inherit;font-size:16px;font-weight:600;cursor:pointer;transition:var(--transition);box-shadow:0 4px 20px rgba(0,0,0,0.3)}
+    .btn-google:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(0,0,0,0.4)}
+    .btn-google img{width:24px;height:24px}
+    .denied-page{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:80vh;gap:20px;text-align:center}
+    .denied-icon{font-size:64px}
+    .denied-title{font-size:24px;font-weight:700}
+    .denied-text{color:var(--text-secondary);font-size:15px;max-width:400px;line-height:1.6}
+    @media(max-width:768px){.header{padding:12px 16px}.main{padding:20px 16px}.logo span{display:none}.recordings-grid{grid-template-columns:1fr}.settings-row{flex-direction:column;align-items:center}.camera-bubble{width:100px;height:100px}.library-header{flex-direction:column}.user-name{display:none}}
   </style>
 </head>
 <body>
   <div id="app"></div>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
   <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script type="text/babel">
     const{useState,useEffect,useRef}=React;
+
+    // ============ Config ============
+    const FB_CONFIG={apiKey:"AIzaSyDOT8WPQ2lskEc8vMaHy-skm3SbZqD_3DU",authDomain:"videoshare-like-loom.firebaseapp.com",projectId:"videoshare-like-loom",storageBucket:"videoshare-like-loom.firebasestorage.app",appId:"1:849107722204:web:a7fc148a27ba625d1db919"};
+
+    // ★ 許可するメールアドレスをここに追加 ★
+    const ALLOWED_EMAILS = [
+      "kazuki19990616@gmail.com",
+      "suguru0925608@gmail.com",
+      "pomuko.nishizaki.bs@gmail.com",
+      "tondahunda5@gmail.com",
+      "yoshito0603@gmail.com",
+      "taijumax@gmail.com",
+      //"",
+    ];
+
+    // ============ Firebase ============
+    const fbApp = firebase.initializeApp(FB_CONFIG);
+    const fbSt = firebase.storage();
+    const fbAuth = firebase.auth();
+    const googleProvider = new firebase.auth.GoogleAuthProvider();
+
+    async function fbUp(blob,fn,onP){const ref=fbSt.ref().child('recordings/'+fn);const t=ref.put(blob);return new Promise((r,j)=>{t.on('state_changed',s=>{if(onP)onP(s.bytesTransferred/s.totalBytes);},j,async()=>{r(await t.snapshot.ref.getDownloadURL());});})}
+    async function fbDel(url){try{fbSt.refFromURL(url).delete();}catch(e){}}
+
+    // ============ IndexedDB ============
     const DB='ScreenCastDB',VER=2,ST='recordings';
     function openDB(){return new Promise((r,j)=>{const q=indexedDB.open(DB,VER);q.onerror=()=>j(q.error);q.onsuccess=()=>r(q.result);q.onupgradeneeded=e=>{const d=e.target.result;if(!d.objectStoreNames.contains(ST))d.createObjectStore(ST,{keyPath:'id'});};})}
     async function dbPut(rec){const d=await openDB();return new Promise((r,j)=>{const t=d.transaction(ST,'readwrite');t.objectStore(ST).put(rec);t.oncomplete=()=>r();t.onerror=()=>j(t.error);})}
@@ -137,19 +177,100 @@
     async function dbDel(id){const d=await openDB();return new Promise((r,j)=>{const t=d.transaction(ST,'readwrite');t.objectStore(ST).delete(id);t.oncomplete=()=>r();t.onerror=()=>j(t.error);})}
     async function dbUpd(id,f){const d=await openDB();return new Promise((r,j)=>{const t=d.transaction(ST,'readwrite');const s=t.objectStore(ST);const q=s.get(id);q.onsuccess=()=>{Object.assign(q.result,f);s.put(q.result);};t.oncomplete=()=>r();t.onerror=()=>j(t.error);})}
 
-    let fbApp=null,fbSt=null;
-    const FB_CONFIG={apiKey:"AIzaSyDOT8WPQ2lskEc8vMaHy-skm3SbZqD_3DU",authDomain:"videoshare-like-loom.firebaseapp.com",projectId:"videoshare-like-loom",storageBucket:"videoshare-like-loom.firebasestorage.app",appId:"1:849107722204:web:a7fc148a27ba625d1db919"};
-    function initFB(){try{if(!fbApp)fbApp=firebase.initializeApp(FB_CONFIG);fbSt=firebase.storage();return true;}catch(e){return false;}}
-    async function fbUp(blob,fn,onP){if(!fbSt)throw Error('No FB');const ref=fbSt.ref().child('recordings/'+fn);const t=ref.put(blob);return new Promise((r,j)=>{t.on('state_changed',s=>{if(onP)onP(s.bytesTransferred/s.totalBytes);},j,async()=>{r(await t.snapshot.ref.getDownloadURL());});})}
-    async function fbDel(url){if(!fbSt)return;try{fbSt.refFromURL(url).delete();}catch(e){}}
-
+    // ============ Utility ============
     function fmt(s){const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sc=Math.floor(s%60);return h>0?`${h}:${String(m).padStart(2,'0')}:${String(sc).padStart(2,'0')}`:`${m}:${String(sc).padStart(2,'0')}`;}
     function fmtD(ts){return new Date(ts).toLocaleDateString('ja-JP',{year:'numeric',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});}
     function fmtS(b){return b<1048576?(b/1024).toFixed(1)+' KB':(b/1048576).toFixed(1)+' MB';}
     function Toast({message,show}){return <div className={`toast ${show?'show':''}`}>{message}</div>;}
 
-    function App(){const p=new URLSearchParams(location.search);const v=p.get('view'),ti=p.get('title');if(v)return <Viewer url={v} title={ti||null}/>;return <Main/>;}
+    // ============ Router ============
+    function App(){
+      const p=new URLSearchParams(location.search);
+      const v=p.get('view'),ti=p.get('title');
+      // 共有URLの閲覧は認証不要
+      if(v) return <Viewer url={v} title={ti||null}/>;
+      // メインアプリは認証必要
+      return <AuthGate/>;
+    }
 
+    // ============ Auth Gate ============
+    function AuthGate(){
+      const[user,setUser]=useState(null);
+      const[loading,setLoading]=useState(true);
+      const[denied,setDenied]=useState(false);
+
+      useEffect(()=>{
+        const unsub=fbAuth.onAuthStateChanged(u=>{
+          if(u){
+            if(ALLOWED_EMAILS.includes(u.email.toLowerCase())){
+              setUser(u);setDenied(false);
+            } else {
+              setDenied(true);setUser(null);
+              fbAuth.signOut();
+            }
+          } else {
+            setUser(null);
+          }
+          setLoading(false);
+        });
+        return ()=>unsub();
+      },[]);
+
+      const login=async()=>{
+        try{
+          const result=await fbAuth.signInWithPopup(googleProvider);
+          const email=result.user.email.toLowerCase();
+          if(!ALLOWED_EMAILS.includes(email)){
+            setDenied(true);
+            await fbAuth.signOut();
+          }
+        }catch(e){console.error(e);}
+      };
+      const logout=()=>fbAuth.signOut();
+
+      if(loading) return <div className="app"><div className="login-page"><div style={{fontSize:32}}>⏳</div><div style={{color:'var(--text-muted)'}}>読み込み中...</div></div></div>;
+      if(denied) return <DeniedPage onRetry={()=>{setDenied(false);}} onLogin={login}/>;
+      if(!user) return <LoginPage onLogin={login}/>;
+      return <MainApp user={user} onLogout={logout}/>;
+    }
+
+    // ============ Login Page ============
+    function LoginPage({onLogin}){
+      return(
+        <div className="app">
+          <header className="header"><div className="logo"><div className="logo-icon">⏺</div><span>ScreenCast</span></div></header>
+          <main className="main">
+            <div className="login-page">
+              <div><div className="login-title">ScreenCast</div><div className="login-subtitle" style={{marginTop:8}}>チーム向け画面録画 & 共有ツール</div></div>
+              <button className="btn-google" onClick={onLogin}>
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google"/>
+                Googleアカウントでログイン
+              </button>
+              <div style={{color:'var(--text-muted)',fontSize:13}}>招待されたメンバーのみ利用可能です</div>
+            </div>
+          </main>
+        </div>
+      );
+    }
+
+    // ============ Denied Page ============
+    function DeniedPage({onRetry,onLogin}){
+      return(
+        <div className="app">
+          <header className="header"><div className="logo"><div className="logo-icon">⏺</div><span>ScreenCast</span></div></header>
+          <main className="main">
+            <div className="denied-page">
+              <div className="denied-icon">🔒</div>
+              <div className="denied-title">アクセスが許可されていません</div>
+              <div className="denied-text">このアカウントは招待リストに含まれていません。管理者にお問い合わせください。</div>
+              <button className="btn btn-secondary" onClick={onLogin}>別のアカウントでログイン</button>
+            </div>
+          </main>
+        </div>
+      );
+    }
+
+    // ============ Shared Viewer (認証不要) ============
     function Viewer({url,title}){
       const[err,setErr]=useState(false);const[spd,setSpd]=useState(1);const vr=useRef(null);
       const cs=s=>{setSpd(s);if(vr.current)vr.current.playbackRate=s;};
@@ -162,11 +283,7 @@
               <video ref={vr} src={url} controls autoPlay controlsList="nodownload" disablePictureInPicture onContextMenu={e=>e.preventDefault()} onError={()=>setErr(true)}/>
             </div>
             {err&&<div className="info-box" style={{borderColor:'var(--danger)',maxWidth:700}}>
-              <span style={{color:'var(--danger)'}}>⚠️ 動画の再生に失敗しました。Firebase StorageのCORS設定が必要です。</span><br/><br/>
-              <strong style={{color:'var(--text-primary)'}}>解決方法：</strong> Firebase Console 右上の <strong>Cloud Shell</strong> アイコン（ターミナル）をクリックし、以下の2行を実行：
-              <code className="code-inline">echo '[{"{"}"origin":["*"],"method":["GET"],"maxAgeSeconds":3600{"}"}]' &gt; cors.json</code>
-              <code className="code-inline">gsutil cors set cors.json gs://<span style={{color:'var(--warning)'}}>あなたのstorageBucket名</span></code>
-              <span style={{fontSize:11,color:'var(--text-muted)'}}>storageBucket名はFirebase設定画面で確認できます（例: videoshare-like-loom.firebasestorage.app）</span>
+              <span style={{color:'var(--danger)'}}>⚠️ 動画の再生に失敗しました。</span>
             </div>}
             <div style={{display:'flex',gap:12,alignItems:'center',flexWrap:'wrap',justifyContent:'center'}}>
               <div className="speed-controls"><span style={{fontSize:12,color:'var(--text-muted)',marginRight:4}}>速度:</span>
@@ -179,10 +296,11 @@
       );
     }
 
-    function Main(){
-      const[tab,setTab]=useState('record');const[recs,setRecs]=useState([]);const[isRec,setIsRec]=useState(false);const[isPaus,setIsPaus]=useState(false);const[elapsed,setElapsed]=useState(0);const[cam,setCam]=useState(true);const[showCD,setShowCD]=useState(false);const[cdNum,setCdNum]=useState(3);const[hasScr,setHasScr]=useState(false);const[playing,setPlaying]=useState(null);const[tMsg,setTMsg]=useState('');const[tShow,setTShow]=useState(false);const[mic,setMic]=useState(true);const[sel,setSel]=useState(new Set());const[fbOk,setFbOk]=useState(false);const[upIds,setUpIds]=useState({});
+    // ============ Main App (認証済みユーザーのみ) ============
+    function MainApp({user,onLogout}){
+      const[tab,setTab]=useState('record');const[recs,setRecs]=useState([]);const[isRec,setIsRec]=useState(false);const[isPaus,setIsPaus]=useState(false);const[elapsed,setElapsed]=useState(0);const[cam,setCam]=useState(true);const[showCD,setShowCD]=useState(false);const[cdNum,setCdNum]=useState(3);const[hasScr,setHasScr]=useState(false);const[playing,setPlaying]=useState(null);const[tMsg,setTMsg]=useState('');const[tShow,setTShow]=useState(false);const[mic,setMic]=useState(true);const[sel,setSel]=useState(new Set());const[upIds,setUpIds]=useState({});
       const svRef=useRef(null),cvRef=useRef(null),mrRef=useRef(null),ssRef=useRef(null),csRef=useRef(null),msRef=useRef(null),chRef=useRef([]),tmRef=useRef(null),stRef=useRef(0),ptRef=useRef(0);
-      useEffect(()=>{load();setFbOk(initFB());},[]);
+      useEffect(()=>{load();},[]);
       const load=async()=>{try{setRecs((await dbAll()).sort((a,b)=>b.createdAt-a.createdAt));}catch(e){}};
       const toast=m=>{setTMsg(m);setTShow(true);setTimeout(()=>setTShow(false),3000);};
 
@@ -220,7 +338,6 @@
       const hDL=r=>{const b=new Blob([r.blob],{type:r.mimeType});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=`${r.title}.webm`;a.click();URL.revokeObjectURL(u);toast('💾 ダウンロード開始');};
       const hShare=async r=>{
         if(r.shareUrl){const u=`${location.origin}${location.pathname}?view=${encodeURIComponent(r.shareUrl)}&title=${encodeURIComponent(r.title)}`;await navigator.clipboard.writeText(u);toast('🔗 リンクをコピーしました！');return;}
-        if(!fbOk){toast('❌ Firebase接続エラー');return;}
         try{setUpIds(p=>({...p,[r.id]:0}));const b=new Blob([r.blob],{type:r.mimeType});const url=await fbUp(b,`${r.id}_${Date.now()}.webm`,p=>setUpIds(prev=>({...prev,[r.id]:p})));await dbUpd(r.id,{shareUrl:url});await load();setUpIds(p=>{const n={...p};delete n[r.id];return n;});const u=`${location.origin}${location.pathname}?view=${encodeURIComponent(url)}&title=${encodeURIComponent(r.title)}`;await navigator.clipboard.writeText(u);toast('🔗 アップロード完了！リンクをコピーしました');}
         catch(e){setUpIds(p=>{const n={...p};delete n[r.id];return n;});toast('❌ アップロード失敗');}
       };
@@ -233,6 +350,13 @@
             <div className="nav-tabs">
               <button className={`nav-tab ${tab==='record'?'active':''}`} onClick={()=>setTab('record')}>🎬 録画</button>
               <button className={`nav-tab ${tab==='library'?'active':''}`} onClick={()=>setTab('library')}>📁 ライブラリ ({recs.length})</button>
+            </div>
+            <div className="header-right">
+              <div className="user-info">
+                {user.photoURL&&<img className="user-avatar" src={user.photoURL} alt=""/>}
+                <span className="user-name">{user.displayName||user.email}</span>
+              </div>
+              <button className="btn-logout" onClick={onLogout}>ログアウト</button>
             </div>
           </header>
           <main className="main">
@@ -257,7 +381,6 @@
             {tab==='library'&&<div>
               <div className="library-header">
                 <div><div className="library-title">ライブラリ</div><div className="library-count">{recs.length} 件の録画</div></div>
-                <div className="library-actions"></div>
               </div>
               {sel.size>0&&<div className="select-bar">
                 <input type="checkbox" checked={sel.size===recs.length} onChange={selAll} style={{width:18,height:18,accentColor:'var(--accent)',cursor:'pointer'}}/>
@@ -274,6 +397,7 @@
       );
     }
 
+    // ============ Card ============
     function Card({r,sel,onTog,onPlay,onDL,onDel,onShare,onTitle,up}){
       const vr=useRef(null);const[t,setT]=useState(r.title);
       useEffect(()=>{if(vr.current){vr.current.src=URL.createObjectURL(new Blob([r.blob],{type:r.mimeType}));vr.current.currentTime=1;}},[r]);
@@ -297,6 +421,7 @@
       );
     }
 
+    // ============ Player ============
     function Player({r,onClose}){
       const vr=useRef(null);const[spd,setSpd]=useState(1);
       useEffect(()=>{if(vr.current){vr.current.src=URL.createObjectURL(new Blob([r.blob],{type:r.mimeType}));vr.current.play();}const k=e=>{if(e.key==='Escape')onClose();};window.addEventListener('keydown',k);return()=>window.removeEventListener('keydown',k);},[r]);
