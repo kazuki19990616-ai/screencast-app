@@ -103,15 +103,6 @@
     .speed-btn{padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--text-secondary);font-family:'JetBrains Mono',monospace;font-size:11px;cursor:pointer;transition:var(--transition)}
     .speed-btn.active{background:var(--accent);color:white;border-color:var(--accent)}
     .speed-btn:hover:not(.active){background:var(--bg-hover)}
-    .config-modal{width:100%;max-width:560px;background:var(--bg-card);border-radius:var(--radius-lg);padding:32px;border:1px solid var(--border);transform:scale(0.95);transition:var(--transition);max-height:90vh;overflow-y:auto}
-    .modal-overlay.active .config-modal{transform:scale(1)}
-    .config-title{font-size:20px;font-weight:700;margin-bottom:8px}
-    .config-subtitle{color:var(--text-secondary);font-size:14px;margin-bottom:24px}
-    .config-field{margin-bottom:16px}
-    .config-label{font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;display:block}
-    .config-input{width:100%;padding:10px 14px;background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-primary);font-family:'JetBrains Mono',monospace;font-size:13px;outline:none;transition:var(--transition)}
-    .config-input:focus{border-color:var(--accent-secondary)}
-    .config-actions{display:flex;gap:12px;justify-content:flex-end;margin-top:24px}
     .viewer-page{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:80vh;gap:24px;padding:20px}
     .viewer-title{font-size:20px;font-weight:700;text-align:center}
     .viewer-video-wrap{width:100%;max-width:960px;aspect-ratio:16/9;background:black;border-radius:var(--radius-lg);overflow:hidden;border:1px solid var(--border);box-shadow:0 20px 60px rgba(0,0,0,0.5)}
@@ -147,9 +138,8 @@
     async function dbUpd(id,f){const d=await openDB();return new Promise((r,j)=>{const t=d.transaction(ST,'readwrite');const s=t.objectStore(ST);const q=s.get(id);q.onsuccess=()=>{Object.assign(q.result,f);s.put(q.result);};t.oncomplete=()=>r();t.onerror=()=>j(t.error);})}
 
     let fbApp=null,fbSt=null;
-    function initFB(c){try{if(!fbApp)fbApp=firebase.initializeApp(c);fbSt=firebase.storage();return true;}catch(e){return false;}}
-    function getFBC(){try{const s=localStorage.getItem('sc_fb');return s?JSON.parse(s):null;}catch{return null;}}
-    function saveFBC(c){localStorage.setItem('sc_fb',JSON.stringify(c));}
+    const FB_CONFIG={apiKey:"AIzaSyDOT8WPQ2lskEc8vMaHy-skm3SbZqD_3DU",authDomain:"videoshare-like-loom.firebaseapp.com",projectId:"videoshare-like-loom",storageBucket:"videoshare-like-loom.firebasestorage.app",appId:"1:849107722204:web:a7fc148a27ba625d1db919"};
+    function initFB(){try{if(!fbApp)fbApp=firebase.initializeApp(FB_CONFIG);fbSt=firebase.storage();return true;}catch(e){return false;}}
     async function fbUp(blob,fn,onP){if(!fbSt)throw Error('No FB');const ref=fbSt.ref().child('recordings/'+fn);const t=ref.put(blob);return new Promise((r,j)=>{t.on('state_changed',s=>{if(onP)onP(s.bytesTransferred/s.totalBytes);},j,async()=>{r(await t.snapshot.ref.getDownloadURL());});})}
     async function fbDel(url){if(!fbSt)return;try{fbSt.refFromURL(url).delete();}catch(e){}}
 
@@ -190,9 +180,9 @@
     }
 
     function Main(){
-      const[tab,setTab]=useState('record');const[recs,setRecs]=useState([]);const[isRec,setIsRec]=useState(false);const[isPaus,setIsPaus]=useState(false);const[elapsed,setElapsed]=useState(0);const[cam,setCam]=useState(true);const[showCD,setShowCD]=useState(false);const[cdNum,setCdNum]=useState(3);const[hasScr,setHasScr]=useState(false);const[playing,setPlaying]=useState(null);const[tMsg,setTMsg]=useState('');const[tShow,setTShow]=useState(false);const[mic,setMic]=useState(true);const[sel,setSel]=useState(new Set());const[showFB,setShowFB]=useState(false);const[fbOk,setFbOk]=useState(false);const[upIds,setUpIds]=useState({});
+      const[tab,setTab]=useState('record');const[recs,setRecs]=useState([]);const[isRec,setIsRec]=useState(false);const[isPaus,setIsPaus]=useState(false);const[elapsed,setElapsed]=useState(0);const[cam,setCam]=useState(true);const[showCD,setShowCD]=useState(false);const[cdNum,setCdNum]=useState(3);const[hasScr,setHasScr]=useState(false);const[playing,setPlaying]=useState(null);const[tMsg,setTMsg]=useState('');const[tShow,setTShow]=useState(false);const[mic,setMic]=useState(true);const[sel,setSel]=useState(new Set());const[fbOk,setFbOk]=useState(false);const[upIds,setUpIds]=useState({});
       const svRef=useRef(null),cvRef=useRef(null),mrRef=useRef(null),ssRef=useRef(null),csRef=useRef(null),msRef=useRef(null),chRef=useRef([]),tmRef=useRef(null),stRef=useRef(0),ptRef=useRef(0);
-      useEffect(()=>{load();const c=getFBC();if(c)setFbOk(initFB(c));},[]);
+      useEffect(()=>{load();setFbOk(initFB());},[]);
       const load=async()=>{try{setRecs((await dbAll()).sort((a,b)=>b.createdAt-a.createdAt));}catch(e){}};
       const toast=m=>{setTMsg(m);setTShow(true);setTimeout(()=>setTShow(false),3000);};
 
@@ -230,12 +220,11 @@
       const hDL=r=>{const b=new Blob([r.blob],{type:r.mimeType});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=`${r.title}.webm`;a.click();URL.revokeObjectURL(u);toast('💾 ダウンロード開始');};
       const hShare=async r=>{
         if(r.shareUrl){const u=`${location.origin}${location.pathname}?view=${encodeURIComponent(r.shareUrl)}&title=${encodeURIComponent(r.title)}`;await navigator.clipboard.writeText(u);toast('🔗 リンクをコピーしました！');return;}
-        if(!fbOk){setShowFB(true);toast('⚠️ Firebase設定が必要です');return;}
+        if(!fbOk){toast('❌ Firebase接続エラー');return;}
         try{setUpIds(p=>({...p,[r.id]:0}));const b=new Blob([r.blob],{type:r.mimeType});const url=await fbUp(b,`${r.id}_${Date.now()}.webm`,p=>setUpIds(prev=>({...prev,[r.id]:p})));await dbUpd(r.id,{shareUrl:url});await load();setUpIds(p=>{const n={...p};delete n[r.id];return n;});const u=`${location.origin}${location.pathname}?view=${encodeURIComponent(url)}&title=${encodeURIComponent(r.title)}`;await navigator.clipboard.writeText(u);toast('🔗 アップロード完了！リンクをコピーしました');}
         catch(e){setUpIds(p=>{const n={...p};delete n[r.id];return n;});toast('❌ アップロード失敗');}
       };
       const hTitle=async(id,t)=>{await dbUpd(id,{title:t});await load();};
-      const sFB=c=>{saveFBC(c);const ok=initFB(c);setFbOk(ok);setShowFB(false);toast(ok?'✅ Firebase接続成功！':'❌ 接続失敗');};
 
       return(
         <div className="app">
@@ -268,7 +257,7 @@
             {tab==='library'&&<div>
               <div className="library-header">
                 <div><div className="library-title">ライブラリ</div><div className="library-count">{recs.length} 件の録画</div></div>
-                <div className="library-actions"><button className="btn btn-secondary btn-sm" onClick={()=>setShowFB(true)}>{fbOk?'🟢':'⚪'} Firebase設定</button></div>
+                <div className="library-actions"></div>
               </div>
               {sel.size>0&&<div className="select-bar">
                 <input type="checkbox" checked={sel.size===recs.length} onChange={selAll} style={{width:18,height:18,accentColor:'var(--accent)',cursor:'pointer'}}/>
@@ -280,7 +269,6 @@
             </div>}
           </main>
           {playing&&<Player r={playing} onClose={()=>setPlaying(null)}/>}
-          {showFB&&<FBConfig onSave={sFB} onClose={()=>setShowFB(false)} cur={getFBC()}/>}
           <Toast message={tMsg} show={tShow}/>
         </div>
       );
@@ -324,39 +312,6 @@
                 <div className="speed-controls">{[0.5,0.75,1,1.25,1.5,2].map(s=><button key={s} className={`speed-btn ${spd===s?'active':''}`} onClick={()=>cs(s)}>{s}x</button>)}</div>
                 <span style={{color:'var(--text-muted)',fontSize:13}}>{fmtD(r.createdAt)} · {fmt(r.duration)} · {fmtS(r.size)}</span>
               </div>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    function FBConfig({onSave,onClose,cur}){
-      const[ak,setAk]=useState(cur?.apiKey||'');const[ad,setAd]=useState(cur?.authDomain||'');const[pi,setPi]=useState(cur?.projectId||'');const[sb,setSb]=useState(cur?.storageBucket||'');const[ai,setAi]=useState(cur?.appId||'');
-      return(
-        <div className="modal-overlay active" onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
-          <div className="config-modal">
-            <div className="config-title">🔥 Firebase設定</div>
-            <div className="config-subtitle">URL共有にはFirebase Storageが必要です</div>
-            <div className="info-box" style={{marginBottom:24}}>
-              <strong style={{color:'var(--text-primary)'}}>セットアップ手順：</strong><br/>
-              1. <a href="https://console.firebase.google.com" target="_blank" style={{color:'var(--accent)'}}>Firebase Console</a> → プロジェクト作成<br/>
-              2. Storage → 開始 → テストモード<br/>
-              3. プロジェクト設定 → ウェブアプリ追加 → 設定値を下にペースト<br/><br/>
-              <strong style={{color:'var(--warning)'}}>⚠️ 必須：CORS設定</strong>（共有リンクの動画再生に必要）<br/>
-              Firebase Console 右上の Cloud Shell アイコンをクリックして以下を実行：
-              <code className="code-inline">echo '[{"{"}"origin":["*"],"method":["GET"],"maxAgeSeconds":3600{"}"}]' &gt; cors.json</code>
-              <code className="code-inline">gsutil cors set cors.json gs://<span style={{color:'var(--warning)'}}>{sb||'あなたのstorageBucket名'}</span></code>
-              <br/>
-              <strong style={{color:'var(--text-primary)'}}>Storageルール（30日制限を解消）：</strong><br/>
-              Firebase Console → Storage → ルール に以下を貼り付けて「公開」：
-              <code className="code-inline" style={{whiteSpace:'pre'}}>{"rules_version = '2';\nservice firebase.storage {\n  match /b/{bucket}/o {\n    match /recordings/{allPaths=**} {\n      allow read: if true;\n      allow write: if request.resource.size < 500 * 1024 * 1024;\n    }\n  }\n}"}</code>
-            </div>
-            {[['API Key',ak,setAk,'AIzaSy...'],['Auth Domain',ad,setAd,'xxx.firebaseapp.com'],['Project ID',pi,setPi,'your-project-id'],['Storage Bucket',sb,setSb,'xxx.firebasestorage.app'],['App ID',ai,setAi,'1:123:web:abc']].map(([l,v,s,p])=>
-              <div className="config-field" key={l}><label className="config-label">{l}</label><input className="config-input" value={v} onChange={e=>s(e.target.value)} placeholder={p}/></div>
-            )}
-            <div className="config-actions">
-              <button className="btn btn-secondary btn-sm" onClick={onClose}>キャンセル</button>
-              <button className="btn btn-primary btn-sm" onClick={()=>onSave({apiKey:ak,authDomain:ad,projectId:pi,storageBucket:sb,appId:ai})} disabled={!ak||!sb}>保存して接続</button>
             </div>
           </div>
         </div>
