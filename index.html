@@ -89,14 +89,17 @@
     .card-btn.danger:hover{background:rgba(239,68,68,0.15);color:var(--danger);border-color:var(--danger)}
     .card-btn.share{border-color:var(--accent-secondary);color:var(--accent-secondary)}
     .card-btn.share:hover{background:rgba(124,92,255,0.15)}
+    .card-btn.transcript{border-color:var(--success);color:var(--success)}
+    .card-btn.transcript:hover{background:rgba(74,222,128,0.15)}
     .share-status{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--success);margin-top:6px}
     .share-url{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--accent-secondary);background:var(--bg-primary);padding:4px 8px;border-radius:4px;cursor:pointer;transition:var(--transition)}
     .share-url:hover{color:var(--text-primary);background:var(--bg-hover)}
+    .transcript-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--success);margin-top:6px}
     .uploading-bar{height:3px;background:var(--bg-secondary);border-radius:2px;margin-top:8px;overflow:hidden}
     .uploading-bar-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent-secondary));border-radius:2px;transition:width 0.3s ease}
     .modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);backdrop-filter:blur(10px);z-index:200;display:flex;align-items:center;justify-content:center;padding:40px;opacity:0;pointer-events:none;transition:var(--transition)}
     .modal-overlay.active{opacity:1;pointer-events:all}
-    .modal{width:100%;max-width:960px;background:var(--bg-card);border-radius:var(--radius-lg);overflow:hidden;border:1px solid var(--border);transform:scale(0.95);transition:var(--transition)}
+    .modal{width:100%;max-width:960px;background:var(--bg-card);border-radius:var(--radius-lg);overflow:hidden;border:1px solid var(--border);transform:scale(0.95);transition:var(--transition);max-height:90vh;overflow-y:auto}
     .modal-overlay.active .modal{transform:scale(1)}
     .modal-video{width:100%;aspect-ratio:16/9;background:black}
     .modal-video video{width:100%;height:100%;object-fit:contain}
@@ -121,10 +124,8 @@
     .countdown-number{font-size:120px;font-weight:700;color:white;animation:cPulse 1s ease-in-out}
     @keyframes cPulse{0%{transform:scale(0.5);opacity:0}50%{transform:scale(1.2);opacity:1}100%{transform:scale(1);opacity:1}}
     .info-box{background:var(--bg-primary);border:1px solid var(--border);border-radius:12px;padding:16px 20px;font-size:13px;color:var(--text-secondary);line-height:1.8}
-    .code-inline{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--success);background:var(--bg-secondary);padding:8px 12px;border-radius:8px;display:block;margin:8px 0;word-break:break-all}
     .login-page{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:80vh;gap:32px;text-align:center}
     .login-title{font-size:32px;font-weight:700;letter-spacing:-1px}
-    .login-subtitle{color:var(--text-secondary);font-size:16px;max-width:400px;line-height:1.6}
     .btn-google{display:flex;align-items:center;gap:12px;padding:14px 32px;background:white;color:#333;border:none;border-radius:var(--radius);font-family:inherit;font-size:16px;font-weight:600;cursor:pointer;transition:var(--transition);box-shadow:0 4px 20px rgba(0,0,0,0.3)}
     .btn-google:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(0,0,0,0.4)}
     .btn-google img{width:24px;height:24px}
@@ -132,6 +133,12 @@
     .denied-icon{font-size:64px}
     .denied-title{font-size:24px;font-weight:700}
     .denied-text{color:var(--text-secondary);font-size:15px;max-width:400px;line-height:1.6}
+    .live-transcript{width:100%;max-width:900px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;max-height:150px;overflow-y:auto;font-size:13px;line-height:1.8;color:var(--text-secondary)}
+    .live-transcript-label{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-muted);width:100%;max-width:900px}
+    .live-dot{width:8px;height:8px;background:var(--success);border-radius:50%;animation:pulse 1s ease-in-out infinite}
+    .transcript-panel{padding:16px 20px;border-top:1px solid var(--border);max-height:300px;overflow-y:auto}
+    .transcript-text{font-size:13px;line-height:2;color:var(--text-secondary);white-space:pre-wrap;word-break:break-word}
+    .transcript-actions{display:flex;gap:8px;padding:0 20px 16px}
     @media(max-width:768px){.header{padding:12px 16px}.main{padding:20px 16px}.logo span{display:none}.recordings-grid{grid-template-columns:1fr}.settings-row{flex-direction:column;align-items:center}.camera-bubble{width:100px;height:100px}.library-header{flex-direction:column}.user-name{display:none}}
   </style>
 </head>
@@ -152,30 +159,49 @@
     // ★ 許可するメールアドレスをここに追加 ★
     const ALLOWED_EMAILS = [
       "kazuki19990616@gmail.com",
-      "suguru0925608@gmail.com",
-      "pomuko.nishizaki.bs@gmail.com",
-      "tondahunda5@gmail.com",
-      "yoshito0603@gmail.com",
-      "taijumax@gmail.com",
-      //"",
+      // "teammate@example.com",
     ];
 
     // ============ Firebase ============
-    const fbApp = firebase.initializeApp(FB_CONFIG);
-    const fbSt = firebase.storage();
-    const fbAuth = firebase.auth();
-    const googleProvider = new firebase.auth.GoogleAuthProvider();
-
+    const fbApp=firebase.initializeApp(FB_CONFIG);
+    const fbSt=firebase.storage();
+    const fbAuth=firebase.auth();
+    const googleProvider=new firebase.auth.GoogleAuthProvider();
     async function fbUp(blob,fn,onP){const ref=fbSt.ref().child('recordings/'+fn);const t=ref.put(blob);return new Promise((r,j)=>{t.on('state_changed',s=>{if(onP)onP(s.bytesTransferred/s.totalBytes);},j,async()=>{r(await t.snapshot.ref.getDownloadURL());});})}
     async function fbDel(url){try{fbSt.refFromURL(url).delete();}catch(e){}}
 
     // ============ IndexedDB ============
-    const DB='ScreenCastDB',VER=2,ST='recordings';
+    const DB='ScreenCastDB',VER=3,ST='recordings';
     function openDB(){return new Promise((r,j)=>{const q=indexedDB.open(DB,VER);q.onerror=()=>j(q.error);q.onsuccess=()=>r(q.result);q.onupgradeneeded=e=>{const d=e.target.result;if(!d.objectStoreNames.contains(ST))d.createObjectStore(ST,{keyPath:'id'});};})}
     async function dbPut(rec){const d=await openDB();return new Promise((r,j)=>{const t=d.transaction(ST,'readwrite');t.objectStore(ST).put(rec);t.oncomplete=()=>r();t.onerror=()=>j(t.error);})}
     async function dbAll(){const d=await openDB();return new Promise((r,j)=>{const t=d.transaction(ST,'readonly');const q=t.objectStore(ST).getAll();q.onsuccess=()=>r(q.result);q.onerror=()=>j(q.error);})}
     async function dbDel(id){const d=await openDB();return new Promise((r,j)=>{const t=d.transaction(ST,'readwrite');t.objectStore(ST).delete(id);t.oncomplete=()=>r();t.onerror=()=>j(t.error);})}
     async function dbUpd(id,f){const d=await openDB();return new Promise((r,j)=>{const t=d.transaction(ST,'readwrite');const s=t.objectStore(ST);const q=s.get(id);q.onsuccess=()=>{Object.assign(q.result,f);s.put(q.result);};t.oncomplete=()=>r();t.onerror=()=>j(t.error);})}
+
+    // ============ Speech Recognition Helper ============
+    const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+    function createSR(onResult,onEnd){
+      if(!SR)return null;
+      const sr=new SR();
+      sr.lang='ja-JP';sr.continuous=true;sr.interimResults=true;sr.maxAlternatives=1;
+      let finalText='';let alive=true;
+      sr.onresult=e=>{
+        let interim='';
+        for(let i=e.resultIndex;i<e.results.length;i++){
+          const t=e.results[i][0].transcript;
+          if(e.results[i].isFinal){finalText+=t+'\n';}else{interim=t;}
+        }
+        onResult(finalText,interim);
+      };
+      sr.onerror=e=>{if(e.error==='no-speech'||e.error==='aborted')return;};
+      sr.onend=()=>{if(alive){try{sr.start();}catch(e){}}else{onEnd(finalText);}};
+      return{
+        start(){alive=true;finalText='';try{sr.start();}catch(e){}},
+        stop(){alive=false;try{sr.stop();}catch(e){onEnd(finalText);}},
+        pause(){alive=false;try{sr.stop();}catch(e){}},
+        resume(){alive=true;try{sr.start();}catch(e){}}
+      };
+    }
 
     // ============ Utility ============
     function fmt(s){const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sc=Math.floor(s%60);return h>0?`${h}:${String(m).padStart(2,'0')}:${String(sc).padStart(2,'0')}`:`${m}:${String(sc).padStart(2,'0')}`;}
@@ -184,123 +210,38 @@
     function Toast({message,show}){return <div className={`toast ${show?'show':''}`}>{message}</div>;}
 
     // ============ Router ============
-    function App(){
-      const p=new URLSearchParams(location.search);
-      const v=p.get('view'),ti=p.get('title');
-      // 共有URLの閲覧は認証不要
-      if(v) return <Viewer url={v} title={ti||null}/>;
-      // メインアプリは認証必要
-      return <AuthGate/>;
-    }
+    function App(){const p=new URLSearchParams(location.search);const v=p.get('view'),ti=p.get('title');if(v)return <Viewer url={v} title={ti||null}/>;return <AuthGate/>;}
 
-    // ============ Auth Gate ============
+    // ============ Auth ============
     function AuthGate(){
-      const[user,setUser]=useState(null);
-      const[loading,setLoading]=useState(true);
-      const[denied,setDenied]=useState(false);
-
-      useEffect(()=>{
-        const unsub=fbAuth.onAuthStateChanged(u=>{
-          if(u){
-            if(ALLOWED_EMAILS.includes(u.email.toLowerCase())){
-              setUser(u);setDenied(false);
-            } else {
-              setDenied(true);setUser(null);
-              fbAuth.signOut();
-            }
-          } else {
-            setUser(null);
-          }
-          setLoading(false);
-        });
-        return ()=>unsub();
-      },[]);
-
-      const login=async()=>{
-        try{
-          const result=await fbAuth.signInWithPopup(googleProvider);
-          const email=result.user.email.toLowerCase();
-          if(!ALLOWED_EMAILS.includes(email)){
-            setDenied(true);
-            await fbAuth.signOut();
-          }
-        }catch(e){console.error(e);}
-      };
-      const logout=()=>fbAuth.signOut();
-
-      if(loading) return <div className="app"><div className="login-page"><div style={{fontSize:32}}>⏳</div><div style={{color:'var(--text-muted)'}}>読み込み中...</div></div></div>;
-      if(denied) return <DeniedPage onRetry={()=>{setDenied(false);}} onLogin={login}/>;
-      if(!user) return <LoginPage onLogin={login}/>;
-      return <MainApp user={user} onLogout={logout}/>;
+      const[user,setUser]=useState(null);const[loading,setLoading]=useState(true);const[denied,setDenied]=useState(false);
+      useEffect(()=>{const unsub=fbAuth.onAuthStateChanged(u=>{if(u){if(ALLOWED_EMAILS.includes(u.email.toLowerCase())){setUser(u);setDenied(false);}else{setDenied(true);setUser(null);fbAuth.signOut();}}else{setUser(null);}setLoading(false);});return()=>unsub();},[]);
+      const login=async()=>{try{const r=await fbAuth.signInWithPopup(googleProvider);if(!ALLOWED_EMAILS.includes(r.user.email.toLowerCase())){setDenied(true);await fbAuth.signOut();}}catch(e){}};
+      if(loading)return <div className="app"><div className="login-page"><div style={{fontSize:32}}>⏳</div><div style={{color:'var(--text-muted)'}}>読み込み中...</div></div></div>;
+      if(denied)return <DeniedPage onLogin={login}/>;
+      if(!user)return <LoginPage onLogin={login}/>;
+      return <MainApp user={user} onLogout={()=>fbAuth.signOut()}/>;
     }
+    function LoginPage({onLogin}){return(<div className="app"><header className="header"><div className="logo"><div className="logo-icon">⏺</div><span>ScreenCast</span></div></header><main className="main"><div className="login-page"><div><div className="login-title">ScreenCast</div><div style={{color:'var(--text-secondary)',fontSize:16,marginTop:8}}>チーム向け画面録画 & 共有ツール</div></div><button className="btn-google" onClick={onLogin}><img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt=""/>Googleアカウントでログイン</button><div style={{color:'var(--text-muted)',fontSize:13}}>招待されたメンバーのみ利用可能です</div></div></main></div>);}
+    function DeniedPage({onLogin}){return(<div className="app"><header className="header"><div className="logo"><div className="logo-icon">⏺</div><span>ScreenCast</span></div></header><main className="main"><div className="denied-page"><div className="denied-icon">🔒</div><div className="denied-title">アクセスが許可されていません</div><div className="denied-text">このアカウントは招待リストに含まれていません。管理者にお問い合わせください。</div><button className="btn btn-secondary" onClick={onLogin}>別のアカウントでログイン</button></div></main></div>);}
 
-    // ============ Login Page ============
-    function LoginPage({onLogin}){
-      return(
-        <div className="app">
-          <header className="header"><div className="logo"><div className="logo-icon">⏺</div><span>ScreenCast</span></div></header>
-          <main className="main">
-            <div className="login-page">
-              <div><div className="login-title">ScreenCast</div><div className="login-subtitle" style={{marginTop:8}}>チーム向け画面録画 & 共有ツール</div></div>
-              <button className="btn-google" onClick={onLogin}>
-                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google"/>
-                Googleアカウントでログイン
-              </button>
-              <div style={{color:'var(--text-muted)',fontSize:13}}>招待されたメンバーのみ利用可能です</div>
-            </div>
-          </main>
-        </div>
-      );
-    }
-
-    // ============ Denied Page ============
-    function DeniedPage({onRetry,onLogin}){
-      return(
-        <div className="app">
-          <header className="header"><div className="logo"><div className="logo-icon">⏺</div><span>ScreenCast</span></div></header>
-          <main className="main">
-            <div className="denied-page">
-              <div className="denied-icon">🔒</div>
-              <div className="denied-title">アクセスが許可されていません</div>
-              <div className="denied-text">このアカウントは招待リストに含まれていません。管理者にお問い合わせください。</div>
-              <button className="btn btn-secondary" onClick={onLogin}>別のアカウントでログイン</button>
-            </div>
-          </main>
-        </div>
-      );
-    }
-
-    // ============ Shared Viewer (認証不要) ============
+    // ============ Viewer (認証不要) ============
     function Viewer({url,title}){
       const[err,setErr]=useState(false);const[spd,setSpd]=useState(1);const vr=useRef(null);
       const cs=s=>{setSpd(s);if(vr.current)vr.current.playbackRate=s;};
-      return(
-        <div className="app">
-          <header className="header"><div className="logo"><div className="logo-icon">⏺</div><span>ScreenCast</span></div></header>
-          <main className="main"><div className="viewer-page">
-            {title&&<div className="viewer-title">{title}</div>}
-            <div className="viewer-video-wrap">
-              <video ref={vr} src={url} controls autoPlay controlsList="nodownload" disablePictureInPicture onContextMenu={e=>e.preventDefault()} onError={()=>setErr(true)}/>
-            </div>
-            {err&&<div className="info-box" style={{borderColor:'var(--danger)',maxWidth:700}}>
-              <span style={{color:'var(--danger)'}}>⚠️ 動画の再生に失敗しました。</span>
-            </div>}
-            <div style={{display:'flex',gap:12,alignItems:'center',flexWrap:'wrap',justifyContent:'center'}}>
-              <div className="speed-controls"><span style={{fontSize:12,color:'var(--text-muted)',marginRight:4}}>速度:</span>
-                {[0.5,0.75,1,1.25,1.5,2].map(s=><button key={s} className={`speed-btn ${spd===s?'active':''}`} onClick={()=>cs(s)}>{s}x</button>)}
-              </div>
-              <a href={location.origin+location.pathname} className="btn btn-primary btn-sm" style={{textDecoration:'none'}}>🎬 自分も録画する</a>
-            </div>
-          </div></main>
-        </div>
-      );
+      return(<div className="app"><header className="header"><div className="logo"><div className="logo-icon">⏺</div><span>ScreenCast</span></div></header><main className="main"><div className="viewer-page">{title&&<div className="viewer-title">{title}</div>}<div className="viewer-video-wrap"><video ref={vr} src={url} controls autoPlay controlsList="nodownload" disablePictureInPicture onContextMenu={e=>e.preventDefault()} onError={()=>setErr(true)}/></div>{err&&<div className="info-box" style={{borderColor:'var(--danger)',maxWidth:700}}><span style={{color:'var(--danger)'}}>⚠️ 動画の再生に失敗しました。</span></div>}<div style={{display:'flex',gap:12,alignItems:'center',flexWrap:'wrap',justifyContent:'center'}}><div className="speed-controls"><span style={{fontSize:12,color:'var(--text-muted)',marginRight:4}}>速度:</span>{[0.5,0.75,1,1.25,1.5,2].map(s=><button key={s} className={`speed-btn ${spd===s?'active':''}`} onClick={()=>cs(s)}>{s}x</button>)}</div><a href={location.origin+location.pathname} className="btn btn-primary btn-sm" style={{textDecoration:'none'}}>🎬 自分も録画する</a></div></div></main></div>);
     }
 
-    // ============ Main App (認証済みユーザーのみ) ============
+    // ============ Main App ============
     function MainApp({user,onLogout}){
       const[tab,setTab]=useState('record');const[recs,setRecs]=useState([]);const[isRec,setIsRec]=useState(false);const[isPaus,setIsPaus]=useState(false);const[elapsed,setElapsed]=useState(0);const[cam,setCam]=useState(true);const[showCD,setShowCD]=useState(false);const[cdNum,setCdNum]=useState(3);const[hasScr,setHasScr]=useState(false);const[playing,setPlaying]=useState(null);const[tMsg,setTMsg]=useState('');const[tShow,setTShow]=useState(false);const[mic,setMic]=useState(true);const[sel,setSel]=useState(new Set());const[upIds,setUpIds]=useState({});
+      // Transcript state
+      const[liveText,setLiveText]=useState('');const[liveInterim,setLiveInterim]=useState('');
       const svRef=useRef(null),cvRef=useRef(null),mrRef=useRef(null),ssRef=useRef(null),csRef=useRef(null),msRef=useRef(null),chRef=useRef([]),tmRef=useRef(null),stRef=useRef(0),ptRef=useRef(0);
+      const srRef=useRef(null);const finalTxRef=useRef('');const liveBoxRef=useRef(null);
+
       useEffect(()=>{load();},[]);
+      useEffect(()=>{if(liveBoxRef.current)liveBoxRef.current.scrollTop=liveBoxRef.current.scrollHeight;},[liveText,liveInterim]);
       const load=async()=>{try{setRecs((await dbAll()).sort((a,b)=>b.createdAt-a.createdAt));}catch(e){}};
       const toast=m=>{setTMsg(m);setTShow(true);setTimeout(()=>setTShow(false),3000);};
 
@@ -315,21 +256,40 @@
         }catch(e){toast('画面共有がキャンセルされました');}
       };
       const cd=()=>new Promise(r=>{setShowCD(true);let c=3;setCdNum(c);const iv=setInterval(()=>{c--;if(c===0){clearInterval(iv);setShowCD(false);r();}else setCdNum(c);},1000);});
+
       const beginR=(ss,ms)=>{
         chRef.current=[];const vt=ss.getVideoTracks()[0];let at=[];
         const sa=ss.getAudioTracks(),hs=sa.length>0,hm=ms&&ms.getAudioTracks().length>0;
         if(hs||hm){try{const ctx=new AudioContext(),dst=ctx.createMediaStreamDestination();if(hs)ctx.createMediaStreamSource(new MediaStream([sa[0]])).connect(dst);if(hm){const g=ctx.createGain();g.gain.value=1.5;ctx.createMediaStreamSource(ms).connect(g);g.connect(dst);}at=dst.stream.getAudioTracks();}catch(e){at=hs?[...sa]:hm?ms.getAudioTracks():[];}}
         const cm=new MediaStream([vt,...at]);const mt=['video/webm;codecs=vp9,opus','video/webm;codecs=vp9','video/webm'].find(m=>MediaRecorder.isTypeSupported(m))||'video/webm';
-        const r=new MediaRecorder(cm,{mimeType:mt});r.ondataavailable=e=>{if(e.data.size>0)chRef.current.push(e.data);};
-        r.onstop=async()=>{const b=new Blob(chRef.current,{type:'video/webm'});if(msRef.current){msRef.current.getTracks().forEach(t=>t.stop());msRef.current=null;}await saveR(b);cleanup();};
+        const r=new MediaRecorder(cm,{mimeType:mt});
+        r.ondataavailable=e=>{if(e.data.size>0)chRef.current.push(e.data);};
+        r.onstop=async()=>{
+          const b=new Blob(chRef.current,{type:'video/webm'});
+          if(msRef.current){msRef.current.getTracks().forEach(t=>t.stop());msRef.current=null;}
+          // Grab transcript
+          const tx=finalTxRef.current;
+          if(srRef.current){srRef.current.stop();srRef.current=null;}
+          await saveR(b,tx);cleanup();
+        };
         r.start(100);mrRef.current=r;setIsRec(true);setIsPaus(false);stRef.current=Date.now();ptRef.current=0;
         tmRef.current=setInterval(()=>setElapsed(Math.floor((Date.now()-stRef.current-ptRef.current)/1000)),200);
+        // Start speech recognition
+        setLiveText('');setLiveInterim('');finalTxRef.current='';
+        if(SR){
+          const sr=createSR(
+            (f,i)=>{finalTxRef.current=f;setLiveText(f);setLiveInterim(i);},
+            (f)=>{finalTxRef.current=f;setLiveText(f);setLiveInterim('');}
+          );
+          srRef.current=sr;sr.start();
+        }
       };
-      const pauseR=()=>{if(mrRef.current?.state==='recording'){mrRef.current.pause();setIsPaus(true);ptRef.current-=Date.now();}};
-      const resumeR=()=>{if(mrRef.current?.state==='paused'){mrRef.current.resume();setIsPaus(false);ptRef.current+=Date.now();}};
-      const stopR=()=>{if(mrRef.current&&mrRef.current.state!=='inactive')mrRef.current.stop();if(tmRef.current)clearInterval(tmRef.current);setIsRec(false);setIsPaus(false);setElapsed(0);setHasScr(false);};
+
+      const pauseR=()=>{if(mrRef.current?.state==='recording'){mrRef.current.pause();setIsPaus(true);ptRef.current-=Date.now();if(srRef.current)srRef.current.pause();}};
+      const resumeR=()=>{if(mrRef.current?.state==='paused'){mrRef.current.resume();setIsPaus(false);ptRef.current+=Date.now();if(srRef.current)srRef.current.resume();}};
+      const stopR=()=>{if(mrRef.current&&mrRef.current.state!=='inactive')mrRef.current.stop();if(tmRef.current)clearInterval(tmRef.current);setIsRec(false);setIsPaus(false);setElapsed(0);setHasScr(false);setLiveInterim('');};
       const cleanup=()=>{[ssRef,csRef,msRef].forEach(r=>{if(r.current){r.current.getTracks().forEach(t=>t.stop());r.current=null;}});if(svRef.current)svRef.current.srcObject=null;if(cvRef.current)cvRef.current.srcObject=null;};
-      const saveR=async b=>{const id='rec_'+Date.now();await dbPut({id,title:`録画 ${new Date().toLocaleString('ja-JP')}`,blob:await b.arrayBuffer(),mimeType:'video/webm',size:b.size,duration:elapsed,createdAt:Date.now(),shareUrl:null});await load();toast('✅ 録画を保存しました！');setTab('library');};
+      const saveR=async(b,tx)=>{const id='rec_'+Date.now();await dbPut({id,title:`録画 ${new Date().toLocaleString('ja-JP')}`,blob:await b.arrayBuffer(),mimeType:'video/webm',size:b.size,duration:elapsed,createdAt:Date.now(),shareUrl:null,transcript:tx||''});await load();toast('✅ 録画を保存しました！');setTab('library');};
 
       const tSel=id=>setSel(p=>{const n=new Set(p);n.has(id)?n.delete(id):n.add(id);return n;});
       const selAll=()=>setSel(p=>p.size===recs.length?new Set():new Set(recs.map(r=>r.id)));
@@ -342,6 +302,7 @@
         catch(e){setUpIds(p=>{const n={...p};delete n[r.id];return n;});toast('❌ アップロード失敗');}
       };
       const hTitle=async(id,t)=>{await dbUpd(id,{title:t});await load();};
+      const hCopyTx=r=>{if(r.transcript){navigator.clipboard.writeText(r.transcript);toast('📝 文字起こしをコピーしました');}};
 
       return(
         <div className="app">
@@ -352,10 +313,7 @@
               <button className={`nav-tab ${tab==='library'?'active':''}`} onClick={()=>setTab('library')}>📁 ライブラリ ({recs.length})</button>
             </div>
             <div className="header-right">
-              <div className="user-info">
-                {user.photoURL&&<img className="user-avatar" src={user.photoURL} alt=""/>}
-                <span className="user-name">{user.displayName||user.email}</span>
-              </div>
+              <div className="user-info">{user.photoURL&&<img className="user-avatar" src={user.photoURL} alt=""/>}<span className="user-name">{user.displayName||user.email}</span></div>
               <button className="btn-logout" onClick={onLogout}>ログアウト</button>
             </div>
           </header>
@@ -377,31 +335,33 @@
                   <button className="btn btn-stop" onClick={stopR}><span className="btn-icon">⏹</span>停止して保存</button>
                 </>}
               </div>
+              {isRec&&<>
+                <div className="live-transcript-label"><div className="live-dot"/><span>📝 文字起こし中（リアルタイム）</span>{!SR&&<span style={{color:'var(--danger)',marginLeft:8}}>※このブラウザは文字起こし非対応です</span>}</div>
+                <div className="live-transcript" ref={liveBoxRef}>
+                  {(liveText||'')}
+                  {liveInterim&&<span style={{color:'var(--accent)',fontStyle:'italic'}}>{liveInterim}</span>}
+                  {!liveText&&!liveInterim&&<span style={{color:'var(--text-muted)'}}>（マイクからの音声を待機中...）</span>}
+                </div>
+              </>}
             </div>}
             {tab==='library'&&<div>
-              <div className="library-header">
-                <div><div className="library-title">ライブラリ</div><div className="library-count">{recs.length} 件の録画</div></div>
-              </div>
-              {sel.size>0&&<div className="select-bar">
-                <input type="checkbox" checked={sel.size===recs.length} onChange={selAll} style={{width:18,height:18,accentColor:'var(--accent)',cursor:'pointer'}}/>
-                <span className="select-bar-count">{sel.size}件を選択中</span>
-                <div className="select-bar-actions"><button className="btn btn-danger btn-sm" onClick={bulkDel}>🗑️ まとめて削除</button><button className="btn btn-secondary btn-sm" onClick={()=>setSel(new Set())}>キャンセル</button></div>
-              </div>}
+              <div className="library-header"><div><div className="library-title">ライブラリ</div><div className="library-count">{recs.length} 件の録画</div></div></div>
+              {sel.size>0&&<div className="select-bar"><input type="checkbox" checked={sel.size===recs.length} onChange={selAll} style={{width:18,height:18,accentColor:'var(--accent)',cursor:'pointer'}}/><span className="select-bar-count">{sel.size}件を選択中</span><div className="select-bar-actions"><button className="btn btn-danger btn-sm" onClick={bulkDel}>🗑️ まとめて削除</button><button className="btn btn-secondary btn-sm" onClick={()=>setSel(new Set())}>キャンセル</button></div></div>}
               {recs.length===0?<div className="empty-state"><div className="empty-icon">🎥</div><div className="empty-title">録画がありません</div><div className="empty-text">「録画」タブから画面録画を始めましょう</div></div>:
-              <div className="recordings-grid">{recs.map(r=><Card key={r.id} r={r} sel={sel.has(r.id)} onTog={()=>tSel(r.id)} onPlay={()=>setPlaying(r)} onDL={()=>hDL(r)} onDel={()=>hDel(r.id)} onShare={()=>hShare(r)} onTitle={hTitle} up={upIds[r.id]}/>)}</div>}
+              <div className="recordings-grid">{recs.map(r=><Card key={r.id} r={r} sel={sel.has(r.id)} onTog={()=>tSel(r.id)} onPlay={()=>setPlaying(r)} onDL={()=>hDL(r)} onDel={()=>hDel(r.id)} onShare={()=>hShare(r)} onTitle={hTitle} onCopyTx={()=>hCopyTx(r)} up={upIds[r.id]}/>)}</div>}
             </div>}
           </main>
-          {playing&&<Player r={playing} onClose={()=>setPlaying(null)}/>}
+          {playing&&<Player r={playing} onClose={()=>setPlaying(null)} toast={toast}/>}
           <Toast message={tMsg} show={tShow}/>
         </div>
       );
     }
 
     // ============ Card ============
-    function Card({r,sel,onTog,onPlay,onDL,onDel,onShare,onTitle,up}){
+    function Card({r,sel,onTog,onPlay,onDL,onDel,onShare,onTitle,onCopyTx,up}){
       const vr=useRef(null);const[t,setT]=useState(r.title);
       useEffect(()=>{if(vr.current){vr.current.src=URL.createObjectURL(new Blob([r.blob],{type:r.mimeType}));vr.current.currentTime=1;}},[r]);
-      const isUp=up!==undefined;
+      const isUp=up!==undefined;const hasTx=r.transcript&&r.transcript.trim().length>0;
       return(
         <div className={`recording-card ${sel?'selected':''}`}>
           <input type="checkbox" className="card-checkbox" checked={sel} onChange={onTog}/>
@@ -410,10 +370,12 @@
             <div className="card-title"><input value={t} onChange={e=>setT(e.target.value)} onBlur={()=>{if(t!==r.title)onTitle(r.id,t);}} onKeyDown={e=>e.key==='Enter'&&e.target.blur()}/></div>
             <div className="card-meta"><span>{fmtD(r.createdAt)}</span><span>{fmtS(r.size)}</span></div>
             {r.shareUrl&&<div className="share-status"><span>🔗 共有中</span><span className="share-url" onClick={()=>{navigator.clipboard.writeText(`${location.origin}${location.pathname}?view=${encodeURIComponent(r.shareUrl)}&title=${encodeURIComponent(r.title)}`);}}>📋 リンクコピー</span></div>}
+            {hasTx&&<div className="transcript-badge">📝 文字起こしあり</div>}
             {isUp&&<div className="uploading-bar"><div className="uploading-bar-fill" style={{width:`${Math.round(up*100)}%`}}/></div>}
           </div>
           <div className="card-actions">
             <button className="card-btn share" onClick={onShare} disabled={isUp}>{isUp?`⏳ ${Math.round(up*100)}%`:r.shareUrl?'🔗 リンクコピー':'🔗 共有'}</button>
+            {hasTx&&<button className="card-btn transcript" onClick={onCopyTx}>📝 文字起こしコピー</button>}
             <button className="card-btn" onClick={onDL}>💾 DL</button>
             <button className="card-btn danger" onClick={onDel}>🗑️</button>
           </div>
@@ -422,8 +384,9 @@
     }
 
     // ============ Player ============
-    function Player({r,onClose}){
-      const vr=useRef(null);const[spd,setSpd]=useState(1);
+    function Player({r,onClose,toast}){
+      const vr=useRef(null);const[spd,setSpd]=useState(1);const[showTx,setShowTx]=useState(false);
+      const hasTx=r.transcript&&r.transcript.trim().length>0;
       useEffect(()=>{if(vr.current){vr.current.src=URL.createObjectURL(new Blob([r.blob],{type:r.mimeType}));vr.current.play();}const k=e=>{if(e.key==='Escape')onClose();};window.addEventListener('keydown',k);return()=>window.removeEventListener('keydown',k);},[r]);
       const cs=s=>{setSpd(s);if(vr.current)vr.current.playbackRate=s;};
       return(
@@ -435,9 +398,16 @@
               <span style={{fontWeight:600}}>{r.title}</span>
               <div style={{display:'flex',gap:12,alignItems:'center',flexWrap:'wrap'}}>
                 <div className="speed-controls">{[0.5,0.75,1,1.25,1.5,2].map(s=><button key={s} className={`speed-btn ${spd===s?'active':''}`} onClick={()=>cs(s)}>{s}x</button>)}</div>
+                {hasTx&&<button className="card-btn transcript" onClick={()=>setShowTx(!showTx)}>{showTx?'📝 閉じる':'📝 文字起こし表示'}</button>}
                 <span style={{color:'var(--text-muted)',fontSize:13}}>{fmtD(r.createdAt)} · {fmt(r.duration)} · {fmtS(r.size)}</span>
               </div>
             </div>
+            {showTx&&hasTx&&<>
+              <div className="transcript-panel"><div className="transcript-text">{r.transcript}</div></div>
+              <div className="transcript-actions">
+                <button className="card-btn transcript" onClick={()=>{navigator.clipboard.writeText(r.transcript);toast('📝 文字起こしをコピーしました');}}>📋 テキストをコピー</button>
+              </div>
+            </>}
           </div>
         </div>
       );
